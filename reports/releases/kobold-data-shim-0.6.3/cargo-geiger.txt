@@ -1,0 +1,33 @@
+status: pass
+generated_at: 2026-06-07T23:48:28Z
+note: every shipped crate is #![forbid(unsafe_code)]
+
+
+Metric output format: x/y
+    x = unsafe code used by the build
+    y = total unsafe code found in the crate
+
+Symbols:
+    :) = No `unsafe` usage found, declares #![forbid(unsafe_code)]
+    ?  = No `unsafe` usage found, missing #![forbid(unsafe_code)]
+    !  = `unsafe` usage found
+
+Functions  Expressions  Impls  Traits  Methods  Dependency
+
+0/0        0/0          0/0    0/0     0/0      ?  kobold-data-shim 0.6.3
+0/0        0/0          0/0    0/0     0/0      :) |-- gnucobol-rs 0.7.0
+0/0        0/5          0/0    0/0     0/0      ?  `-- serde 1.0.228
+0/0        5/5          0/0    0/0     0/0      !      |-- serde_core 1.0.228
+0/0        0/0          0/0    0/0     0/0      ?      `-- serde_derive 1.0.228
+0/0        14/14        0/0    0/0     3/3      !          |-- proc-macro2 1.0.106
+0/0        4/4          0/0    0/0     0/0      !          |   `-- unicode-ident 1.0.24
+0/0        0/0          0/0    0/0     0/0      ?          |-- quote 1.0.45
+0/0        14/14        0/0    0/0     3/3      !          |   `-- proc-macro2 1.0.106
+0/0        87/87        3/3    0/0     2/2      !          `-- syn 2.0.117
+0/0        14/14        0/0    0/0     3/3      !              |-- proc-macro2 1.0.106
+0/0        0/0          0/0    0/0     0/0      ?              |-- quote 1.0.45
+0/0        4/4          0/0    0/0     0/0      !              `-- unicode-ident 1.0.24
+
+0/0        110/115      3/3    0/0     5/5
+
+

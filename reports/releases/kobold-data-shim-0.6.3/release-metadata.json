@@ -1,0 +1,11 @@
+{
+  "schema": "kobold-release-metadata-v1",
+  "crate": "kobold-data-shim",
+  "version": "0.6.3",
+  "kind": "kobold",
+  "git_commit": "7c38e10003f50a46afc7dc575a01b33d11013ccb",
+  "generated_at_utc": "2026-06-07T23:48:28Z",
+  "publish_status": "pending_crates_io_rate_limit_window",
+  "dependency_count": 2,
+  "note": "git repo is the authority; crates.io may trail under publish rate limits."
+}

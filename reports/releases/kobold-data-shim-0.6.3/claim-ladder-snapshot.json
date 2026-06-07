@@ -1,0 +1,60 @@
+{
+  "schema": "claim-ladder-snapshot-v1",
+  "crate": "kobold-data-shim",
+  "version": "0.6.3",
+  "generated_at_utc": "2026-06-07T23:48:28Z",
+  "courts": [
+    {
+      "id": "KOBOLD.RECON.1",
+      "name": "fixed-record reconciliation",
+      "proven": "end-to-end decode of fixed-record data -> byte-stable JSONL + audit receipt + explicit unsupported, over sealed courts only",
+      "byte_domain": "JSON bytes + audit-receipt bytes (composing field/record/text-word/predicate domains)",
+      "oracle": "the sealed GNURUST courts (no new oracle)",
+      "fixtures": "3 families / 360 records, byte-stable, CLI==lib",
+      "sealed_version": "kobold-data-shim 0.2.0",
+      "not_proven": "transformed-record write-back; EBCDIC; edited PIC; line-sequential containers",
+      "breaks_claim": "treating KOBOLD output as business truth beyond sealed fields",
+      "readiness": 4,
+      "lie_prevented": "'decoded JSON is business truth' \u2014 it is record truth over sealed courts only"
+    },
+    {
+      "id": "KOBOLD.DATA.2",
+      "name": "binary fields in corpus",
+      "proven": "COMP/COMP-5/COMP-X binary fields decoded end-to-end in the reconciliation corpus (composes GNURUST.14)",
+      "byte_domain": "JSON + audit bytes",
+      "oracle": "sealed GNURUST courts (no new oracle)",
+      "fixtures": "3 families x 120 incl binary fields, byte-stable",
+      "sealed_version": "kobold-data-shim 0.3.0",
+      "not_proven": "binary arithmetic; business truth",
+      "breaks_claim": "binary fields text-converted",
+      "readiness": 4,
+      "lie_prevented": "'binary fields are text under any encoding' \u2014 they are raw storage passthrough"
+    },
+    {
+      "id": "KOBOLD.DATA.3",
+      "name": "cp500 EBCDIC in corpus",
+      "proven": "cp500 alphanumeric DISPLAY decoded end-to-end with binary/packed passthrough proven untouched (composes GNURUST.15)",
+      "byte_domain": "JSON + audit bytes",
+      "oracle": "sealed GNURUST courts",
+      "fixtures": "account-cp500 family (120 rec) + ebcdic_never_touches_binary test",
+      "sealed_version": "kobold-data-shim 0.4.0",
+      "not_proven": "numeric DISPLAY under cp500 (EBCDIC zoned sign); business truth",
+      "breaks_claim": "EBCDIC conversion touching COMP bytes",
+      "readiness": 4,
+      "lie_prevented": "'EBCDIC touches all bytes' \u2014 binary/packed pass through untouched (proven)"
+    },
+    {
+      "id": "KOBOLD.OPERATOR.1",
+      "name": "operator trust layer",
+      "proven": "explain-field (provenance/courts/value/non-claims), control totals, dirty-data evidence/strict, JSON key-collision refusal, stale-copybook risk in receipts",
+      "byte_domain": "operator JSON outputs + audit",
+      "oracle": "sealed GNURUST courts",
+      "fixtures": "5 operator tests (explain/totals/collision/dirty)",
+      "sealed_version": "kobold-data-shim 0.5.0",
+      "not_proven": "business truth; semantic validity; INITIALIZE/repair",
+      "breaks_claim": "coercing dirty bytes; silent key collision",
+      "readiness": 4,
+      "lie_prevented": "'a hand-written PASS table is evidence' \u2014 every value names its court + provenance"
+    }
+  ]
+}

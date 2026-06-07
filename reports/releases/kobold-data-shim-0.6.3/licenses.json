@@ -1,0 +1,11 @@
+{
+  "schema": "kobold-release-licenses-v1",
+  "crate": "kobold-data-shim",
+  "version": "0.6.3",
+  "this_crate_license": "Apache-2.0",
+  "dependency_license_summary": {
+    "LGPL-3.0-or-later": 1,
+    "Apache-2.0": 1
+  },
+  "copyleft_boundary": "gnucobol-rs is LGPL-3.0+ (derives from libcob); cobc-oracle-rs is GPL-3.0+ (lab-only, drives cobc). kobold-data-shim is Apache-2.0 and LINKS gnucobol-rs (LGPL) -- see its NOTICE for the relink obligation. No GPL code is in any published decode-path crate."
+}

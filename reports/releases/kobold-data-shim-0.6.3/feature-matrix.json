@@ -1,0 +1,11 @@
+{
+  "schema": "kobold-release-feature-matrix-v1",
+  "crate": "kobold-data-shim",
+  "version": "0.6.3",
+  "features": {
+    "default": "[]",
+    "serde": "[\"dep:serde\"]"
+  },
+  "default_features": "[]",
+  "note": "Off-by-default features stay boring/portable until separately proven (e.g. serde Serialize-only, strings never floats)."
+}

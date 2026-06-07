@@ -1,0 +1,93 @@
+{
+  "schema": "kobold-release-receipt-manifest-v1",
+  "crate": "kobold-data-shim",
+  "version": "0.6.3",
+  "trust2_doctrine": "receipts are generated from live replay; see docs/trust2-generated-receipts.md",
+  "receipts": [
+    {
+      "campaign": "GNURUST.10",
+      "verdict": "fail",
+      "result": "no-result",
+      "court": "OCCURS DEPENDING ON physical-max layout"
+    },
+    {
+      "campaign": "GNURUST.11",
+      "verdict": "fail",
+      "result": "no-result",
+      "court": "LEVEL-88 condition-name truth"
+    },
+    {
+      "campaign": "GNURUST.12",
+      "verdict": "fail",
+      "result": "no-result",
+      "court": "SET condition-name TO TRUE"
+    },
+    {
+      "campaign": "GNURUST.14",
+      "verdict": "pass",
+      "result": "PASS=546 FAIL=0",
+      "court": "binary COMP/COMP-5/COMP-X storage + MOVE"
+    },
+    {
+      "campaign": "GNURUST.15",
+      "verdict": "pass",
+      "result": "PASS=256 FAIL=0",
+      "court": "cp500 EBCDIC DISPLAY decode"
+    },
+    {
+      "campaign": "GNURUST.16",
+      "verdict": "pass",
+      "result": "PASS=92 FAIL=0",
+      "court": "edited-picture decode (16a + 16b)"
+    },
+    {
+      "campaign": "GNURUST.17",
+      "verdict": "pass",
+      "result": "PASS=120 FAIL=0",
+      "court": "cp500 EBCDIC zoned-decimal numeric DISPLAY decode"
+    },
+    {
+      "campaign": "GNURUST.18",
+      "verdict": "pass",
+      "result": "PASS=98 FAIL=0",
+      "court": "COMP-6 unsigned packed storage + MOVE"
+    },
+    {
+      "campaign": "GNURUST.2",
+      "verdict": "pass",
+      "result": "PASS=13152 FAIL=0",
+      "court": "decimal MOVE (COMP-3/zoned/display)"
+    },
+    {
+      "campaign": "GNURUST.3",
+      "verdict": "pass",
+      "result": "PASS=432 FAIL=0",
+      "court": "PIC field model (+P scaling)"
+    },
+    {
+      "campaign": "GNURUST.4",
+      "verdict": "fail",
+      "result": "no-result",
+      "court": "record layout (+ODO physical-max)"
+    },
+    {
+      "campaign": "GNURUST.5",
+      "verdict": "fail",
+      "result": "no-result",
+      "court": "COPY / REPLACING expansion"
+    },
+    {
+      "campaign": "GNURUST.7",
+      "verdict": "fail",
+      "result": "no-result",
+      "court": "arithmetic ADD/SUB/MUL (+packed receiver)"
+    },
+    {
+      "campaign": "GNURUST.8",
+      "verdict": "fail",
+      "result": "no-result",
+      "court": "VALUE initial-record image"
+    }
+  ],
+  "count": 14
+}

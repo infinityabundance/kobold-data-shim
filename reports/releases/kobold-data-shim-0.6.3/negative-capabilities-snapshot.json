@@ -1,0 +1,27 @@
+{
+  "schema": "negative-capabilities-snapshot-v1",
+  "crate": "kobold-data-shim",
+  "version": "0.6.3",
+  "negatives": [
+    {
+      "id": "KOBOLD.RECON.1",
+      "not_proven": "transformed-record write-back; EBCDIC; edited PIC; line-sequential containers",
+      "lie_prevented": "'decoded JSON is business truth' \u2014 it is record truth over sealed courts only"
+    },
+    {
+      "id": "KOBOLD.DATA.2",
+      "not_proven": "binary arithmetic; business truth",
+      "lie_prevented": "'binary fields are text under any encoding' \u2014 they are raw storage passthrough"
+    },
+    {
+      "id": "KOBOLD.DATA.3",
+      "not_proven": "numeric DISPLAY under cp500 (EBCDIC zoned sign); business truth",
+      "lie_prevented": "'EBCDIC touches all bytes' \u2014 binary/packed pass through untouched (proven)"
+    },
+    {
+      "id": "KOBOLD.OPERATOR.1",
+      "not_proven": "business truth; semantic validity; INITIALIZE/repair",
+      "lie_prevented": "'a hand-written PASS table is evidence' \u2014 every value names its court + provenance"
+    }
+  ]
+}
