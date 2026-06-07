@@ -89,4 +89,4 @@ See [`docs/enterprise-readiness.md`](docs/enterprise-readiness.md) for the SBOM 
 
 This crate's source is **Apache-2.0** (`LICENSE`). It links `gnucobol-rs`, which is
 **LGPL-3.0-or-later** — see [`NOTICE`](NOTICE) for what that requires when you distribute a binary
-(relink-ability + notice). A future clean-room permissive kernel would remove that obligation.
+(relink-ability + notice).
