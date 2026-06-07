@@ -86,7 +86,7 @@ the sealed `gnucobol-rs` courts:
 (`BRANCH-NO` is `COMP`, `RISK-SCORE` is `COMP-X`, `INTERNAL-ID` is `COMP-5` — binary fields decoded
 from raw storage, not text-converted.)
 
-A committed corpus of 3 fixture families (account / payroll / insurance, 360 records, with `COPY ... REPLACING`, COMP-3, **COMP/COMP-5/COMP-X binary**, **cp500 EBCDIC text** (explicit `--encoding`, binary/packed passthrough), and alpha + numeric-range LEVEL-88s) is in [`recon/`](recon/), with a
+A committed corpus of 3 fixture families (account / payroll / insurance, 360 records, with `COPY ... REPLACING`, COMP-3, **COMP/COMP-5/COMP-X binary**, **cp500 EBCDIC text + zoned numeric DISPLAY** (explicit `--encoding`; `REGION-CODE`/`LIMIT-AMT`/`RISK-PERCENT`; binary/packed passthrough), and alpha + numeric-range LEVEL-88s) is in [`recon/`](recon/), with a
 sealing receipt at [`recon/RECEIPT-KOBOLD-RECON-1.md`](recon/RECEIPT-KOBOLD-RECON-1.md). The output is
 proven byte-stable across runs and CLI == library; `unsupported.json` lists anything outside the
 sealed courts — never a silent fallback. The inverse direction (`SET condition TO TRUE` →
@@ -126,7 +126,8 @@ Claims are **layered**: a court is *sealed in `gnucobol-rs`* (proven byte-exact 
 - **Composed in the KOBOLD reconciliation corpus (byte-stable, CLI == library):**
   DISPLAY / COMP-3 / **COMP / COMP-5 / COMP-X**, `PIC` widths + record offsets, fixed `OCCURS` /
   `REDEFINES (≤ target)` / `OCCURS DEPENDING ON` physical-max / `FILLER`, `COPY [REPLACING]`,
-  **cp500 alphanumeric DISPLAY text with explicit `--encoding`** (binary/packed pass through untouched),
+  **cp500 alphanumeric DISPLAY text + numeric DISPLAY/zoned sign with explicit `--encoding`** (audit
+  `numeric_display` block; binary/packed pass through untouched),
   LEVEL-88 condition predicates, **edited-picture decode** (`GNURUST.16` — presentation string in JSON,
   numeric in the audit `edited` block), and **cp500 numeric DISPLAY / EBCDIC zoned sign** (`GNURUST.17`).
 - **Fails closed / future (surfaced for reconciliation, never guessed):** `COMP-6`, floats, `SET ... TO FALSE` / FALSE clause, mixed/auto-detected
