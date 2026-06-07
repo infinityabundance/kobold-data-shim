@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.0]
+- **KOBOLD.OPERATOR.1 — operator trust layer.** New `operator` module + CLI subcommands that make every
+  decoded field accountable:
+  - `explain <cpy> <data> <FIELD> --record N` → `explain_field`: provenance (copybook:line), offset/
+    size/usage/pic, raw bytes, decoded value, **validity**, **sealed courts used**, dependent LEVEL-88s,
+    record hash, non-claims, and the stale-copybook risk statement.
+  - `totals <cpy> <data> --record-len N` → `control_totals`: record count, per-field numeric sums,
+    condition true-counts, invalid/unsupported counts.
+  - `decode <cpy> <data> --dirty-mode evidence|strict` → `DirtyMode`: evidence preserves invalid bytes
+    and lists them; strict errors. **Never coerces.**
+  - JSON key collisions are **refused** (duplicate field names); exact COBOL names preserved.
+  - The reconcile audit now carries `stale_copybook_risk` (semantic decode hashes unchanged; goldens
+    regenerated). Bumped to gnucobol-rs ^0.6. Additive API → semver-minor.
+
 ## [0.4.0]
 - **KOBOLD.DATA.3 — cp500 EBCDIC in the reconciliation packet.** New `Encoding` enum (`Ascii`/`Cp500`,
   never auto-detected) + `reconcile_encoded` / `decode_record_encoded`. Under `Cp500`, alphanumeric

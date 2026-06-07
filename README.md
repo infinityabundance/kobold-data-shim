@@ -21,6 +21,23 @@ CUST                         0    10 group         (group)
 Every numeric value is decoded by a court proven **byte-identical to GnuCOBOL 3.2's `libcob`** under
 a differential sweep. The raw bytes travel alongside every field as the audit trail.
 
+
+## Operator trust layer (KOBOLD.OPERATOR.1)
+
+Every decoded field is **accountable** — point at a value and ask *why*:
+
+```sh
+kobold-recon explain account.cpy input.dat ACCOUNT-RECORD.BALANCE --record 0 --copydir .
+kobold-recon totals  account.cpy input.dat --record-len 42 --copydir .
+kobold-recon decode  account.cpy input.dat --record-len 42 --dirty-mode strict
+```
+
+`explain` returns source provenance (`copybook:line`), offset/size, usage/pic, raw bytes, decoded
+value, the **sealed courts** that produced it, dependent LEVEL-88s, the record hash, the explicit
+non-claims, and a stale-copybook risk note. `totals` gives control totals (record count, per-field
+numeric sums, condition counts, invalid/unsupported). `decode --dirty-mode` preserves dirty bytes as
+evidence (or rejects in `strict`) — **never coerces**. Duplicate JSON keys are refused, not clobbered.
+
 ## Why it exists
 
 Mainframe modernization on AWS routinely ingests VSAM/flat-file exports into S3 + Aurora/Redshift.

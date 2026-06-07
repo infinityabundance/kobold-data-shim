@@ -82,6 +82,8 @@ pub fn reconcile_encoded(
     if record_len == 0 {
         return Err(ShimError::Layout("record_len must be > 0".into()));
     }
+    // Refuse silent JSON key collisions before producing any output (KOBOLD.OPERATOR.1).
+    crate::operator::check_copybook_collisions(copybook, resolver)?;
     let enc_note = match encoding {
         crate::Encoding::Cp500 => ",\"encoding\":{\"record_default\":\"cp500\",\"source\":\"gnucobol-3.2:ebcdic500_ascii8bit.ttbl\",\"auto_detected\":false,\"binary_fields_passthrough\":true,\"packed_fields_passthrough\":true,\"mixed_encoding_claim\":false}",
         crate::Encoding::Ascii => "",
@@ -199,6 +201,7 @@ pub fn reconcile_encoded(
             "\"gnucobol_rs_version\":{},",
             "\"kobold_data_shim_version\":{},",
             "\"decode_output_sha256\":{}{}{},",
+            "\"stale_copybook_risk\":{},",
             "\"byte_stable_replay\":true}}\n"
         ),
         jstr(fixture),
@@ -215,6 +218,7 @@ pub fn reconcile_encoded(
         jstr(&decode_output_sha256),
         binary_note,
         enc_note,
+        jstr(crate::operator::STALE_COPYBOOK_RISK),
     );
 
     Ok(ReconResult {

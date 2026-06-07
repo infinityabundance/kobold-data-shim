@@ -66,8 +66,10 @@ fn logical_bytes<'a>(
 }
 use std::collections::HashMap;
 
+pub mod operator;
 pub mod recon;
 pub mod sha256;
+pub use operator::{control_totals, explain_field, DirtyMode, STALE_COPYBOOK_RISK};
 
 /// A decoded elementary field.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -317,10 +319,32 @@ impl DecodedRecord {
 
 /// A parsed program: the laid-out items, per-field attrs/category, and LEVEL-88 conditions keyed by
 /// parent field. Shared by the field decoder and the condition evaluator.
+/// Per-field provenance + declaration metadata for the operator `explain` evidence (`KOBOLD.OPERATOR.1`).
+#[derive(Debug, Clone, Default)]
+pub(crate) struct FieldMeta {
+    pub pic: String,
+    pub usage: String,
+    pub source_file: String,
+    pub source_line: usize,
+}
+
 struct Program {
     laid: Vec<gnucobol_rs::Laid>,
     attrs: HashMap<String, (FieldAttr, &'static str)>,
     conditions: Vec<(String, Condition)>,
+    meta: HashMap<String, FieldMeta>,
+    /// True if expansion spliced more than one source file (a `COPY` was used).
+    used_copy: bool,
+}
+
+fn usage_label(u: Usage) -> &'static str {
+    match u {
+        Usage::Display => "DISPLAY",
+        Usage::Comp3 => "COMP-3",
+        Usage::Comp => "COMP",
+        Usage::Comp5 => "COMP-5",
+        Usage::CompX => "COMP-X",
+    }
 }
 
 fn parse_program(copybook: &str, resolver: &impl CopyResolver) -> Result<Program, ShimError> {
@@ -328,9 +352,10 @@ fn parse_program(copybook: &str, resolver: &impl CopyResolver) -> Result<Program
     let mut items = Vec::new();
     let mut attrs: HashMap<String, (FieldAttr, &'static str)> = HashMap::new();
     let mut conditions: Vec<(String, Condition)> = Vec::new();
+    let mut meta: HashMap<String, FieldMeta> = HashMap::new();
     let mut last_parent: Option<String> = None;
 
-    for line in &expanded.lines {
+    for (idx, line) in expanded.lines.iter().enumerate() {
         if line.trim().is_empty() {
             continue;
         }
@@ -360,6 +385,16 @@ fn parse_program(copybook: &str, resolver: &impl CopyResolver) -> Result<Program
                     _ => "unsupported",
                 };
                 attrs.insert(item.name.clone(), (pf.attr, cat));
+                let prov = expanded.provenance.get(idx);
+                meta.insert(
+                    item.name.clone(),
+                    FieldMeta {
+                        pic: pic.clone(),
+                        usage: usage_label(usage).to_string(),
+                        source_file: prov.map(|p| p.file.clone()).unwrap_or_default(),
+                        source_line: prov.map(|p| p.line).unwrap_or(0),
+                    },
+                );
             } else {
                 attrs.insert(
                     item.name.clone(),
@@ -379,10 +414,20 @@ fn parse_program(copybook: &str, resolver: &impl CopyResolver) -> Result<Program
         items.push(item);
     }
     let laid = lay_out(&items).map_err(|e| ShimError::Layout(e.to_string()))?;
+    let mut files: Vec<&str> = expanded
+        .provenance
+        .iter()
+        .map(|p| p.file.as_str())
+        .collect();
+    files.sort_unstable();
+    files.dedup();
+    let used_copy = files.len() > 1;
     Ok(Program {
         laid,
         attrs,
         conditions,
+        meta,
+        used_copy,
     })
 }
 
