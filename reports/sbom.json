@@ -2,7 +2,7 @@
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
   "metadata": {
-    "component": { "type": "application", "name": "kobold-data-shim", "version": "0.3.1", "licenses": [{ "license": { "id": "Apache-2.0" } }] }
+    "component": { "type": "application", "name": "kobold-data-shim", "version": "0.3.2", "licenses": [{ "license": { "id": "Apache-2.0" } }] }
   },
   "components": [
     {

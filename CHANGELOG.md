@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.2]
+- Fix: the corpus golden test is now version-agnostic (compares decode/layout/input hashes, not the
+  embedded tool-version metadata that changes per release), so a shim version bump no longer drifts
+  the goldens; regenerated the committed audit.json. (0.3.1's bundled goldens carried the prior
+  version string in a test fixture — cosmetic, no functional effect.)
+
 ## [0.3.1]
 - **Ergonomics.** Optional `serde` feature (off by default) derives `Serialize` on `DecodedField`/
   `DecodedCondition`/`DecodedRecord` for Rust services consuming legacy feeds — values stay strings,
