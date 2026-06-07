@@ -80,9 +80,9 @@ fn check_family(fixture: &str, dir: &str, copybook: &str, record_len: usize) {
 
 #[test]
 fn corpus_is_byte_stable_and_golden() {
-    check_family("account-status-v1", "recon/account", "ACCTREC.cpy", 51);
-    check_family("payroll-v1", "recon/payroll", "PAYREC.cpy", 33);
-    check_family("insurance-policy-v1", "recon/insurance", "INSREC.cpy", 36);
+    check_family("account-status-v1", "recon/account", "ACCTREC.cpy", 55);
+    check_family("payroll-v1", "recon/payroll", "PAYREC.cpy", 36);
+    check_family("insurance-policy-v1", "recon/insurance", "INSREC.cpy", 41);
 }
 
 #[test]
@@ -96,7 +96,7 @@ fn cp500_family_composes_end_to_end() {
         "account-cp500",
         &cb,
         &data,
-        51,
+        55,
         "0.5.0",
         &res,
         Encoding::Cp500,
@@ -106,7 +106,7 @@ fn cp500_family_composes_end_to_end() {
         "account-cp500",
         &cb,
         &data,
-        51,
+        55,
         "0.5.0",
         &res,
         Encoding::Cp500,
@@ -157,10 +157,16 @@ fn ebcdic_never_touches_binary_or_packed() {
     let data = std::fs::read(format!("{dir}/input.ebc")).unwrap();
     let res = DirResolver(dir.into());
     let ascii =
-        kobold_data_shim::decode_record_encoded(&cb, &data[..51], &res, Encoding::Ascii).unwrap();
+        kobold_data_shim::decode_record_encoded(&cb, &data[..55], &res, Encoding::Ascii).unwrap();
     let cp500 =
-        kobold_data_shim::decode_record_encoded(&cb, &data[..51], &res, Encoding::Cp500).unwrap();
-    let passthrough = ["BALANCE", "BRANCH-NO", "RISK-SCORE", "INTERNAL-ID"]; // COMP-3/COMP/COMP-X/COMP-5
+        kobold_data_shim::decode_record_encoded(&cb, &data[..55], &res, Encoding::Cp500).unwrap();
+    let passthrough = [
+        "BALANCE",
+        "BRANCH-NO",
+        "RISK-SCORE",
+        "INTERNAL-ID",
+        "ACCT-SEQ-C6",
+    ]; // COMP-3/COMP/COMP-X/COMP-5
     let mut passthrough_same = 0;
     for (a, e) in ascii.fields.iter().zip(cp500.fields.iter()) {
         if a.category == "numeric" {
@@ -177,8 +183,8 @@ fn ebcdic_never_touches_binary_or_packed() {
         }
     }
     assert!(
-        passthrough_same >= 4,
-        "expected >=4 binary/packed fields proven untouched, got {passthrough_same}"
+        passthrough_same >= 5,
+        "expected >=5 binary/packed fields proven untouched, got {passthrough_same}"
     );
 }
 
@@ -212,6 +218,59 @@ fn cp500_numeric_under_ascii_unchanged() {
 }
 
 #[test]
+fn comp6_composes_in_corpus() {
+    // KOBOLD.DATA.6: an unsigned COMP-6 field decodes to a decimal string; audit names GNURUST.18.
+    let dir = "recon/account";
+    let cb = std::fs::read_to_string(format!("{dir}/ACCTREC.cpy")).unwrap();
+    let data = std::fs::read(format!("{dir}/input.dat")).unwrap();
+    let r = reconcile(
+        "account-status-v1",
+        &cb,
+        &data,
+        55,
+        "0.7.0",
+        &DirResolver(dir.into()),
+    )
+    .unwrap();
+    assert_eq!(r.unsupported_count, 0);
+    let first = r.jsonl.lines().next().unwrap();
+    assert!(
+        first.contains("\"ACCOUNT-SEQUENCE\":\"10000000\""),
+        "COMP-6 decoded: {first}"
+    );
+    assert!(
+        r.audit_json.contains("\"comp6\":{\"claim\":\"GNURUST.18\""),
+        "audit names GNURUST.18"
+    );
+    assert!(r
+        .audit_json
+        .contains("\"domain\":\"comp6-unsigned-packed\""));
+}
+
+#[test]
+fn signed_comp6_fails_closed() {
+    // GNURUST.18 learned GnuCOBOL converts `S9(n) COMP-6` to COMP-3 -> the shim refuses to treat a
+    // signed COMP-6 as COMP-6; it is surfaced as unsupported, never silently decoded.
+    let cb = "       01 R.\n           05 N PIC S9(4) COMP-6.\n";
+    let res = kobold_data_shim::NoCopy;
+    let rec =
+        kobold_data_shim::decode_record_encoded(cb, b"\x12\x34", &res, Encoding::Ascii).unwrap();
+    let n = rec.fields.iter().find(|f| f.name == "N").unwrap();
+    assert_eq!(
+        n.category, "unsupported",
+        "signed COMP-6 must fail closed, not decode"
+    );
+    // Unsigned COMP-6 in the same shape DOES decode.
+    let cb2 = "       01 R.\n           05 M PIC 9(4) COMP-6.\n";
+    let dec =
+        kobold_data_shim::decode_record_encoded(cb2, b"\x12\x34", &res, Encoding::Ascii).unwrap();
+    assert_eq!(
+        dec.fields.iter().find(|f| f.name == "M").unwrap().value,
+        "1234"
+    );
+}
+
+#[test]
 fn edited_picture_composes_end_to_end() {
     // KOBOLD.DATA.4: an edited DISPLAY field decodes; JSON keeps the presentation string, the audit
     // carries the oracle-proven numeric interpretation. 0 unsupported.
@@ -222,7 +281,7 @@ fn edited_picture_composes_end_to_end() {
         "account-status-v1",
         &cb,
         &data,
-        51,
+        55,
         "0.6.2",
         &DirResolver(dir.into()),
     )

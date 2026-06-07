@@ -86,7 +86,7 @@ the sealed `gnucobol-rs` courts:
 (`BRANCH-NO` is `COMP`, `RISK-SCORE` is `COMP-X`, `INTERNAL-ID` is `COMP-5` — binary fields decoded
 from raw storage, not text-converted.)
 
-A committed corpus of 3 fixture families (account / payroll / insurance, 360 records, with `COPY ... REPLACING`, COMP-3, **COMP/COMP-5/COMP-X binary**, **cp500 EBCDIC text + zoned numeric DISPLAY** (explicit `--encoding`; `REGION-CODE`/`LIMIT-AMT`/`RISK-PERCENT`; binary/packed passthrough), and alpha + numeric-range LEVEL-88s) is in [`recon/`](recon/), with a
+A committed corpus of 3 fixture families (account / payroll / insurance, 360 records, with `COPY ... REPLACING`, COMP-3, **COMP/COMP-5/COMP-X binary**, **COMP-6 unsigned packed**, **cp500 EBCDIC text + zoned numeric DISPLAY** (explicit `--encoding`; `REGION-CODE`/`LIMIT-AMT`/`RISK-PERCENT`; binary/packed passthrough), and alpha + numeric-range LEVEL-88s) is in [`recon/`](recon/), with a
 sealing receipt at [`recon/RECEIPT-KOBOLD-RECON-1.md`](recon/RECEIPT-KOBOLD-RECON-1.md). The output is
 proven byte-stable across runs and CLI == library; `unsupported.json` lists anything outside the
 sealed courts — never a silent fallback. The inverse direction (`SET condition TO TRUE` →

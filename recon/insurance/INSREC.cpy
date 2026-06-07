@@ -8,3 +8,4 @@
           05 POLICY-SEQUENCE PIC 9(10) COMP-X.
           05 CLAIM-COUNT     PIC 9(4) COMP.
           05 POLICY-EDIT    PIC ZZZ,ZZ9.99.
+          05 POLICY-CODE     PIC 9(10) COMP-6.

@@ -164,6 +164,13 @@ fn main() {
             5,
             false,
         )); // RISK-PERCENT 9(3)V99
+            // COMP-6 unsigned packed (KOBOLD.DATA.6): raw host storage -> proven untouched under cp500.
+        out.extend_from_slice(&enc_numeric(
+            "9(8)",
+            Usage::Comp6,
+            false,
+            &format!("{}", 20_000_000 + i),
+        ));
     }
     std::fs::write("recon/account-cp500/input.ebc", &out).unwrap();
     eprintln!(

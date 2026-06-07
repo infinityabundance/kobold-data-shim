@@ -245,6 +245,8 @@ fn account(n: usize) -> Vec<u8> {
                 false,
                 format!("{}.{:02}", rng.below(99999), rng.below(100)),
             ),
+            // COMP-6 unsigned packed (KOBOLD.DATA.6 / GNURUST.18).
+            ("9(8)", Usage::Comp6, false, format!("{}", 10_000_000 + i)),
         ]));
     }
     out
@@ -294,6 +296,8 @@ fn payroll(n: usize) -> Vec<u8> {
                     rng.below(100)
                 ),
             ),
+            // COMP-6 unsigned packed (KOBOLD.DATA.6 / GNURUST.18).
+            ("9(6)", Usage::Comp6, false, format!("{}", 200_000 + i)),
         ]));
     }
     out
@@ -326,6 +330,13 @@ fn insurance(n: usize) -> Vec<u8> {
                 false,
                 format!("{}.{:02}", rng.below(999999), rng.below(100)),
             ),
+            // COMP-6 unsigned packed (KOBOLD.DATA.6 / GNURUST.18).
+            (
+                "9(10)",
+                Usage::Comp6,
+                false,
+                format!("{}", 9_000_000_000_u64 + i as u64),
+            ),
         ]));
     }
     out
@@ -335,5 +346,5 @@ fn main() {
     std::fs::write("recon/account/input.dat", account(120)).unwrap();
     std::fs::write("recon/payroll/input.dat", payroll(120)).unwrap();
     std::fs::write("recon/insurance/input.dat", insurance(120)).unwrap();
-    eprintln!("wrote 3 x 120 = 360 records (with COMP/COMP-5/COMP-X binary fields)");
+    eprintln!("wrote 3 x 120 = 360 records (with COMP/COMP-5/COMP-X binary + COMP-6 unsigned packed fields)");
 }

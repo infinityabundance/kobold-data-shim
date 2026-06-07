@@ -105,6 +105,13 @@ pub fn reconcile_encoded(
     } else {
         ""
     };
+    // COMP-6 (KOBOLD.DATA.6 / GNURUST.18): unsigned packed-decimal storage. Signed COMP-6 is not
+    // admitted (GnuCOBOL converts it to COMP-3) and is surfaced as unsupported, never decoded here.
+    let comp6_note = if up.contains("COMP-6") || up.contains("COMPUTATIONAL-6") {
+        ",\"comp6\":{\"claim\":\"GNURUST.18\",\"domain\":\"comp6-unsigned-packed\",\"signed_comp6\":\"not-admitted-fail-closed\"}"
+    } else {
+        ""
+    };
 
     let mut jsonl = String::new();
     let mut unsupported_items: Vec<String> = Vec::new();
@@ -227,7 +234,7 @@ pub fn reconcile_encoded(
             "\"unsupported_count\":{},",
             "\"gnucobol_rs_version\":{},",
             "\"kobold_data_shim_version\":{},",
-            "\"decode_output_sha256\":{}{}{},",
+            "\"decode_output_sha256\":{}{}{}{},",
             "\"stale_copybook_risk\":{},",
             "\"byte_stable_replay\":true}}\n"
         ),
@@ -244,6 +251,7 @@ pub fn reconcile_encoded(
         jstr(SHIM_VERSION),
         jstr(&decode_output_sha256),
         binary_note,
+        comp6_note,
         enc_note,
         jstr(crate::operator::STALE_COPYBOOK_RISK),
     );

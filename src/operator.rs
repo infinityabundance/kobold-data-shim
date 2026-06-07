@@ -12,7 +12,7 @@
 use crate::sha256::sha256_hex;
 use crate::{
     decode_fields, eval_conditions, parse_program, CopyResolver, Encoding, ShimError,
-    COB_TYPE_NUMERIC_PACKED,
+    COB_FLAG_NO_SIGN_NIBBLE, COB_TYPE_NUMERIC_PACKED,
 };
 
 /// How to treat field bytes that are invalid for their declared type (a *dirty-data* policy).
@@ -50,16 +50,25 @@ fn jstr(s: &str) -> String {
 }
 
 /// Is a byte slice a *valid* value for its declared field type? (Dirty-data detection — never coerces.)
-fn field_valid(field_type: u16, category: &str, bytes: &[u8]) -> bool {
+fn field_valid(field_type: u16, flags: u16, category: &str, bytes: &[u8]) -> bool {
     match category {
         "alphanumeric" => true, // any bytes are text
         "numeric" => match field_type {
+            // COMP-6 (PACKED + NO_SIGN_NIBBLE) has no sign nibble — every nibble is a digit.
+            t if t == COB_TYPE_NUMERIC_PACKED && flags & COB_FLAG_NO_SIGN_NIBBLE != 0 => {
+                comp6_valid(bytes)
+            }
             t if t == COB_TYPE_NUMERIC_PACKED => packed_valid(bytes),
             0x11 => true, // binary: any byte pattern is a valid two's-complement value
             _ => display_num_valid(bytes), // zoned/display
         },
         _ => false, // group / unsupported are not decoded values
     }
+}
+
+/// COMP-6 (unsigned packed, `GNURUST.18`): every nibble is a digit 0..9 — no sign nibble.
+fn comp6_valid(bytes: &[u8]) -> bool {
+    !bytes.is_empty() && bytes.iter().all(|&b| (b >> 4) <= 9 && (b & 0x0F) <= 9)
 }
 
 /// COMP-3: every nibble is a digit except the final (sign) nibble, which must be a sign code.
@@ -160,13 +169,13 @@ pub fn explain_field(
     let conds = eval_conditions(&prog, record, encoding);
     let deps: Vec<_> = conds.iter().filter(|c| c.parent == field).collect();
     let meta = prog.meta.get(field);
-    let (ft, cat) = prog
+    let (ft, fl, cat) = prog
         .attrs
         .get(field)
-        .map(|(a, c)| (a.field_type, *c))
-        .unwrap_or((0, "group"));
+        .map(|(a, c)| (a.field_type, a.flags, *c))
+        .unwrap_or((0, 0, "group"));
     let slice = record.get(laid.offset..laid.offset + laid.size);
-    let valid = slice.map(|b| field_valid(ft, cat, b)).unwrap_or(false);
+    let valid = slice.map(|b| field_valid(ft, fl, cat, b)).unwrap_or(false);
     let courts = sealed_courts(ft, cat, prog.used_copy, !deps.is_empty(), encoding);
 
     let mut o = String::from("{");
@@ -264,11 +273,11 @@ pub fn control_totals(
                     let ft = prog
                         .attrs
                         .get(&f.name)
-                        .map(|(a, _)| a.field_type)
-                        .unwrap_or(0);
+                        .map(|(a, _)| (a.field_type, a.flags))
+                        .unwrap_or((0, 0));
                     let slice = chunk.get(f.offset..f.offset + f.size);
                     if !slice
-                        .map(|b| field_valid(ft, "numeric", b))
+                        .map(|b| field_valid(ft.0, ft.1, "numeric", b))
                         .unwrap_or(false)
                     {
                         invalid += 1;
@@ -362,11 +371,11 @@ pub fn decode_records_json(
             let ft = prog
                 .attrs
                 .get(&f.name)
-                .map(|(a, _)| a.field_type)
-                .unwrap_or(0);
+                .map(|(a, _)| (a.field_type, a.flags))
+                .unwrap_or((0, 0));
             let valid = chunk
                 .get(f.offset..f.offset + f.size)
-                .map(|b| field_valid(ft, f.category, b))
+                .map(|b| field_valid(ft.0, ft.1, f.category, b))
                 .unwrap_or(false);
             if !valid {
                 invalid.push(f.name.clone());

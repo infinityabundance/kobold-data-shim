@@ -14,3 +14,4 @@
            05 REGION-CODE    PIC 9(3).
            05 LIMIT-AMT      PIC S9(7)V99.
            05 RISK-PERCENT   PIC 9(3)V99.
+           05 ACCT-SEQ-C6   PIC 9(8) COMP-6.

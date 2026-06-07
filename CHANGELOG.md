@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.3]
+- **KOBOLD.DATA.6 — COMP-6 composed.** One unsigned COMP-6 field per family (ACCOUNT-SEQUENCE `9(8)`,
+  PAYROLL-BATCH-NO `9(6)`, POLICY-CODE `9(10)`; +ACCT-SEQ-C6 in the cp500 corpus) decodes via
+  gnucobol-rs `GNURUST.18`. Audit gains a `comp6` block (`claim:GNURUST.18`, `domain:comp6-unsigned-packed`).
+  **Signed COMP-6 fails closed** (GnuCOBOL converts `S9(n) COMP-6` to COMP-3 — never silently decoded).
+  The cp500 passthrough test proves EBCDIC decode never touches COMP-6 bytes. Operator dirty-data check
+  validates COMP-6 (all-digit nibbles, no sign nibble). 0 unsupported, byte-stable, CLI==lib. Requires
+  gnucobol-rs ^0.7. Additive composition, no shim API change -> patch.
+
 ## [0.6.2]
 - **KOBOLD.DATA.5 — cp500 numeric DISPLAY composed.** EBCDIC zoned-decimal numeric DISPLAY fields now
   decode through `gnucobol-rs` `GNURUST.17` (was fail-closed). The `account-cp500` family gained

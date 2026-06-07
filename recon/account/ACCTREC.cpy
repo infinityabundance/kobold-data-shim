@@ -10,3 +10,4 @@
           05 RISK-SCORE     PIC 9(6) COMP-X.
           05 INTERNAL-ID    PIC S9(9) COMP-5.
           05 PRINT-BAL      PIC ZZ,ZZ9.99.
+          05 ACCOUNT-SEQUENCE PIC 9(8) COMP-6.

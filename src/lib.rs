@@ -29,7 +29,8 @@ pub use gnucobol_rs::copybook::CopyResolver;
 use gnucobol_rs::pic::COB_TYPE_ALPHANUMERIC;
 use gnucobol_rs::{
     build_field, eval_88, translate_byte, CodePage, CondLit, CondValue, Condition, Decimal,
-    FieldAttr, Usage, COB_TYPE_NUMERIC_BINARY, COB_TYPE_NUMERIC_DISPLAY, COB_TYPE_NUMERIC_PACKED,
+    FieldAttr, Usage, COB_FLAG_NO_SIGN_NIBBLE, COB_TYPE_NUMERIC_BINARY, COB_TYPE_NUMERIC_DISPLAY,
+    COB_TYPE_NUMERIC_PACKED,
 };
 
 /// The record's declared character encoding (`KOBOLD.DATA.3`). **Never auto-detected** — the caller
@@ -164,6 +165,7 @@ fn parse_item(decl: &str) -> Option<(Item, Usage, bool, bool)> {
             "COMP" | "BINARY" | "COMPUTATIONAL" => usage = Usage::Comp,
             "COMP-5" => usage = Usage::Comp5,
             "COMP-X" => usage = Usage::CompX,
+            "COMP-6" | "COMPUTATIONAL-6" => usage = Usage::Comp6,
             "DISPLAY" => usage = Usage::Display,
             "OCCURS" => {
                 // "OCCURS min TO max TIMES DEPENDING ON item" (ODO) or "OCCURS n TIMES" (fixed).
@@ -350,6 +352,8 @@ fn usage_label(u: Usage) -> &'static str {
         Usage::Comp => "COMP",
         Usage::Comp5 => "COMP-5",
         Usage::CompX => "COMP-X",
+        Usage::Comp6 => "COMP-6",
+        _ => "UNKNOWN-USAGE",
     }
 }
 
@@ -382,7 +386,16 @@ fn parse_program(copybook: &str, resolver: &impl CopyResolver) -> Result<Program
             continue; // tolerate non-item lines (DIVISION headers etc.)
         };
         if let Some((ref pic, _, _, _)) = item.pic {
-            if let Ok(pf) = build_field(pic, usage, sep, lead) {
+            // Signed COMP-6 is NOT admitted (KOBOLD.DATA.6 / GNURUST.18): GnuCOBOL silently converts
+            // `S9(n) COMP-6` to COMP-3, so we fail closed rather than treat it as unsigned COMP-6.
+            let signed_comp6 =
+                usage == Usage::Comp6 && pic.trim_start().to_ascii_uppercase().starts_with('S');
+            let built = if signed_comp6 {
+                None
+            } else {
+                build_field(pic, usage, sep, lead).ok()
+            };
+            if let Some(pf) = built {
                 let cat = match pf.attr.field_type {
                     COB_TYPE_NUMERIC_DISPLAY
                     | COB_TYPE_NUMERIC_PACKED

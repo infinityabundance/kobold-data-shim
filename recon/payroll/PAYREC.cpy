@@ -9,3 +9,4 @@
           05 EMPLOYEE-NO    PIC 9(6) COMP.
           05 HOURS-BUCKET   PIC S9(4) COMP-5.
           05 DEDUCT-EDIT    PIC ZZ9.99CR.
+          05 PAYROLL-BATCH-NO PIC 9(6) COMP-6.
