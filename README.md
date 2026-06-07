@@ -46,7 +46,29 @@ assert_eq!(fields.iter().find(|f| f.name == "CUST-BAL").unwrap().value, "-12.34"
 ```
 
 `decode_with_resolver(copybook, record, resolver)` expands `COPY` statements via a caller-supplied
-`CopyResolver` (the CLI resolves them from `--copydir`).
+`CopyResolver` (the CLI resolves them from `--copydir`). `decode_record(...)` additionally evaluates
+**LEVEL-88 condition names** (`gnucobol-rs`' `eval_88`), so a decoded record carries both fields and
+condition truths.
+
+## End-to-end reconciliation (`KOBOLD.RECON.1`)
+
+`kobold_data_shim::recon::reconcile` (and the `kobold-recon` CLI) decode a fixed-record file into
+**byte-stable** JSONL + a `kobold-recon-receipt-v1` audit + an explicit `unsupported.json`, using only
+the sealed `gnucobol-rs` courts:
+
+```json
+{"record_index":0,
+ "fields":{"ACCOUNT-ID":"100000","STATUS-CODE":"A","BALANCE":"5459318.55","CUST-NAME":"CUSTOMER 0000","CUST-TIER":"G"},
+ "conditions":{"ACTIVE":true,"CLOSED":false,"DELINQUENT":false,"CUST-GOLD":true},
+ "audit":{"raw_offset":0,"raw_len":33,"record_sha256":"…"}}
+```
+
+A committed corpus of 3 fixture families (account / payroll / insurance, 360 records, with
+`COPY ... REPLACING`, COMP-3, and alpha + numeric-range LEVEL-88s) is in [`recon/`](recon/), with a
+sealing receipt at [`recon/RECEIPT-KOBOLD-RECON-1.md`](recon/RECEIPT-KOBOLD-RECON-1.md). The output is
+proven byte-stable across runs and CLI == library; `unsupported.json` lists anything outside the
+sealed courts — never a silent fallback. The inverse direction (`SET condition TO TRUE` →
+bytes → `eval_88` true) is the [`recon/condition-set/`](recon/condition-set/) fixture.
 
 ## AWS reference architecture (S3 → verified records)
 

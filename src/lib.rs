@@ -22,15 +22,19 @@
 #![forbid(unsafe_code)]
 
 use gnucobol_rs::copybook::expand;
-use gnucobol_rs::layout::{lay_out, Item};
+use gnucobol_rs::layout::{lay_out, Item, Odo};
 
 /// Re-exported so callers can implement a custom copybook search path for [`decode_with_resolver`].
 pub use gnucobol_rs::copybook::CopyResolver;
 use gnucobol_rs::pic::COB_TYPE_ALPHANUMERIC;
 use gnucobol_rs::{
-    build_field, Decimal, FieldAttr, Usage, COB_TYPE_NUMERIC_DISPLAY, COB_TYPE_NUMERIC_PACKED,
+    build_field, eval_88, CondLit, CondValue, Condition, Decimal, FieldAttr, Usage,
+    COB_TYPE_NUMERIC_DISPLAY, COB_TYPE_NUMERIC_PACKED,
 };
 use std::collections::HashMap;
+
+pub mod recon;
+pub mod sha256;
 
 /// A decoded elementary field.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -98,9 +102,12 @@ fn parse_item(decl: &str) -> Option<(Item, Usage, bool, bool)> {
         return None;
     }
     let level: u16 = toks[0].parse().ok()?;
+    if level == 88 {
+        return None; // a LEVEL-88 condition, handled separately (not a storage item)
+    }
     let name = toks[1].clone();
-    let (mut pic, mut usage, mut occurs, mut redefines, mut sep, mut lead) =
-        (None, Usage::Display, None, None, false, false);
+    let (mut pic, mut usage, mut occurs, mut redefines, mut sep, mut lead, mut odo) =
+        (None, Usage::Display, None, None, false, false, None);
     let mut i = 2;
     while i < toks.len() {
         match toks[i].as_str() {
@@ -114,7 +121,27 @@ fn parse_item(decl: &str) -> Option<(Item, Usage, bool, bool)> {
             "COMP-3" | "PACKED-DECIMAL" | "COMPUTATIONAL-3" => usage = Usage::Comp3,
             "DISPLAY" => usage = Usage::Display,
             "OCCURS" => {
-                if i + 1 < toks.len() {
+                // "OCCURS min TO max TIMES DEPENDING ON item" (ODO) or "OCCURS n TIMES" (fixed).
+                if i + 3 < toks.len() && toks[i + 2] == "TO" {
+                    let min = toks[i + 1].parse().unwrap_or(0);
+                    let max = toks[i + 3].parse().unwrap_or(0);
+                    let mut dep = String::new();
+                    let mut k = i + 4;
+                    while k + 2 < toks.len() {
+                        if toks[k] == "DEPENDING" && toks[k + 1] == "ON" {
+                            dep = toks[k + 2].clone();
+                            break;
+                        }
+                        k += 1;
+                    }
+                    odo = Some(Odo {
+                        min,
+                        max,
+                        depending_on: dep,
+                    });
+                    i += 4;
+                    continue;
+                } else if i + 1 < toks.len() {
                     occurs = toks[i + 1].parse().ok();
                     i += 2;
                     continue;
@@ -139,30 +166,152 @@ fn parse_item(decl: &str) -> Option<(Item, Usage, bool, bool)> {
         pic: pic.map(|p| (p, usage, sep, lead)),
         occurs,
         redefines,
+        odo,
     };
     Some((item, usage, sep, lead))
 }
 
-/// Decode `record` against a `copybook` (data-division item lines, possibly with `COPY`), using
-/// `resolver` to find copybooks. Returns one [`DecodedField`] per named item (groups included).
-pub fn decode_with_resolver(
-    copybook: &str,
-    record: &[u8],
-    resolver: &impl CopyResolver,
-) -> Result<Vec<DecodedField>, ShimError> {
-    let expanded = expand(copybook, resolver).map_err(|e| ShimError::Copy(e.to_string()))?;
+/// Parse a `88 NAME VALUE …` condition line into `(name, values)`. Handles `"lit"` / numeric
+/// literals, multiple values, and `THRU` ranges. Returns `None` for non-88 lines.
+fn parse_88(decl: &str) -> Option<(String, Vec<CondValue>)> {
+    let decl = decl.trim_end().trim_end_matches('.');
+    let mut words = decl.split_whitespace();
+    if words.next()? != "88" {
+        return None;
+    }
+    let name = words.next()?.to_ascii_uppercase();
+    if !words.next()?.eq_ignore_ascii_case("VALUE") {
+        return None;
+    }
+    // Tokenize the remaining text into literals and the THRU keyword (quotes preserved).
+    let rest: String = decl
+        .split_once("VALUE")
+        .or_else(|| decl.split_once("value"))
+        .map(|(_, r)| r.to_string())
+        .unwrap_or_default();
+    let lits = tokenize_values(&rest);
+    let mut values = Vec::new();
+    let mut i = 0;
+    while i < lits.len() {
+        if i + 2 < lits.len() && lits[i + 1].eq_ignore_ascii_case("THRU") {
+            values.push(CondValue::Range(make_lit(&lits[i]), make_lit(&lits[i + 2])));
+            i += 3;
+        } else {
+            values.push(CondValue::Lit(make_lit(&lits[i])));
+            i += 1;
+        }
+    }
+    if values.is_empty() {
+        return None;
+    }
+    Some((name, values))
+}
 
+/// Split a VALUE clause body into literal/keyword tokens (a quoted string is one token).
+fn tokenize_values(s: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut chars = s.chars().peekable();
+    while let Some(&c) = chars.peek() {
+        if c.is_whitespace() {
+            chars.next();
+        } else if c == '"' || c == '\'' {
+            let q = c;
+            chars.next();
+            let mut lit = String::from("\"");
+            for ch in chars.by_ref() {
+                if ch == q {
+                    break;
+                }
+                lit.push(ch);
+            }
+            lit.push('"');
+            out.push(lit);
+        } else {
+            let mut tok = String::new();
+            while let Some(&ch) = chars.peek() {
+                if ch.is_whitespace() {
+                    break;
+                }
+                tok.push(ch);
+                chars.next();
+            }
+            out.push(tok);
+        }
+    }
+    out
+}
+
+/// A token like `"A"` becomes an alphanumeric literal; everything else is numeric.
+fn make_lit(tok: &str) -> CondLit {
+    if let Some(inner) = tok.strip_prefix('"').and_then(|t| t.strip_suffix('"')) {
+        CondLit::Alpha(inner.to_string())
+    } else {
+        CondLit::Num(tok.to_string())
+    }
+}
+
+/// A decoded LEVEL-88 condition: its truth (or an error marker) for the current record.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DecodedCondition {
+    pub name: String,
+    pub parent: String,
+    /// `Some(true/false)` if evaluated, `None` if the parent/values were unsupported.
+    pub value: Option<bool>,
+}
+
+/// A fully decoded record: its fields and condition-name truths.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DecodedRecord {
+    pub fields: Vec<DecodedField>,
+    pub conditions: Vec<DecodedCondition>,
+}
+
+impl DecodedRecord {
+    /// Count of fields outside the sealed subset (the reconciliation signal).
+    pub fn unsupported(&self) -> usize {
+        self.fields
+            .iter()
+            .filter(|f| f.category == "unsupported")
+            .count()
+    }
+}
+
+/// A parsed program: the laid-out items, per-field attrs/category, and LEVEL-88 conditions keyed by
+/// parent field. Shared by the field decoder and the condition evaluator.
+struct Program {
+    laid: Vec<gnucobol_rs::Laid>,
+    attrs: HashMap<String, (FieldAttr, &'static str)>,
+    conditions: Vec<(String, Condition)>,
+}
+
+fn parse_program(copybook: &str, resolver: &impl CopyResolver) -> Result<Program, ShimError> {
+    let expanded = expand(copybook, resolver).map_err(|e| ShimError::Copy(e.to_string()))?;
     let mut items = Vec::new();
     let mut attrs: HashMap<String, (FieldAttr, &'static str)> = HashMap::new();
+    let mut conditions: Vec<(String, Condition)> = Vec::new();
+    let mut last_parent: Option<String> = None;
+
     for line in &expanded.lines {
         if line.trim().is_empty() {
+            continue;
+        }
+        // A LEVEL-88 condition attaches to the most recent elementary field.
+        if let Some((cname, values)) = parse_88(line) {
+            if let Some(parent) = &last_parent {
+                conditions.push((
+                    parent.clone(),
+                    Condition {
+                        name: cname,
+                        values,
+                    },
+                ));
+            }
             continue;
         }
         let Some((item, usage, sep, lead)) = parse_item(line) else {
             continue; // tolerate non-item lines (DIVISION headers etc.)
         };
         if let Some((ref pic, _, _, _)) = item.pic {
-            // Resolve the field's attr + category for decoding.
             if let Ok(pf) = build_field(pic, usage, sep, lead) {
                 let cat = match pf.attr.field_type {
                     COB_TYPE_NUMERIC_DISPLAY | COB_TYPE_NUMERIC_PACKED => "numeric",
@@ -184,16 +333,23 @@ pub fn decode_with_resolver(
                     ),
                 );
             }
+            last_parent = Some(item.name.clone());
         }
         items.push(item);
     }
-
     let laid = lay_out(&items).map_err(|e| ShimError::Layout(e.to_string()))?;
+    Ok(Program {
+        laid,
+        attrs,
+        conditions,
+    })
+}
 
+fn decode_fields(prog: &Program, record: &[u8]) -> Vec<DecodedField> {
     let mut out = Vec::new();
-    for l in &laid {
+    for l in &prog.laid {
         let slice = record.get(l.offset..l.offset + l.size);
-        let (category, value, raw) = match (attrs.get(&l.name), slice) {
+        let (category, value, raw) = match (prog.attrs.get(&l.name), slice) {
             (None, _) => ("group", String::from("(group)"), String::new()),
             (Some((_, "unsupported")), Some(bytes)) => (
                 "unsupported",
@@ -229,7 +385,48 @@ pub fn decode_with_resolver(
             raw_hex: raw,
         });
     }
-    Ok(out)
+    out
+}
+
+fn eval_conditions(prog: &Program, record: &[u8]) -> Vec<DecodedCondition> {
+    let mut out = Vec::new();
+    for (parent, cond) in &prog.conditions {
+        let value = prog.laid.iter().find(|l| &l.name == parent).and_then(|l| {
+            let (attr, _) = prog.attrs.get(parent)?;
+            let bytes = record.get(l.offset..l.offset + l.size)?;
+            eval_88(attr, bytes, cond).ok()
+        });
+        out.push(DecodedCondition {
+            name: cond.name.clone(),
+            parent: parent.clone(),
+            value,
+        });
+    }
+    out
+}
+
+/// Decode `record` against a `copybook` (data-division item lines, possibly with `COPY`), using
+/// `resolver` to find copybooks. Returns one [`DecodedField`] per named item (groups included).
+pub fn decode_with_resolver(
+    copybook: &str,
+    record: &[u8],
+    resolver: &impl CopyResolver,
+) -> Result<Vec<DecodedField>, ShimError> {
+    let prog = parse_program(copybook, resolver)?;
+    Ok(decode_fields(&prog, record))
+}
+
+/// Decode a record into its fields **and** its LEVEL-88 condition-name truths (`eval_88`).
+pub fn decode_record(
+    copybook: &str,
+    record: &[u8],
+    resolver: &impl CopyResolver,
+) -> Result<DecodedRecord, ShimError> {
+    let prog = parse_program(copybook, resolver)?;
+    Ok(DecodedRecord {
+        fields: decode_fields(&prog, record),
+        conditions: eval_conditions(&prog, record),
+    })
 }
 
 /// Decode a record against a copybook with no nested `COPY`.
