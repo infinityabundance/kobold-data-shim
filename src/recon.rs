@@ -62,6 +62,19 @@ pub fn reconcile(
     let expanded =
         gnucobol_rs::expand(copybook, resolver).map_err(|e| ShimError::Copy(e.to_string()))?;
     let expanded_text = expanded.text();
+    // Byte-domain note: flag binary usages so the audit records the endian assumption explicitly.
+    let up = expanded_text.to_ascii_uppercase();
+    let has_binary = up.contains("COMP-5")
+        || up.contains("COMP-X")
+        || up.contains(" COMP.")
+        || up.contains(" COMP\n")
+        || up.contains("BINARY")
+        || up.contains("COMPUTATIONAL");
+    let binary_note = if has_binary {
+        ",\"binary_byteorder\":\"big-endian (COMP/COMP-X), native-little-endian (COMP-5); admitted GnuCOBOL 3.2 binary-size 1-2-4-8\""
+    } else {
+        ""
+    };
 
     let mut jsonl = String::new();
     let mut unsupported_items: Vec<String> = Vec::new();
@@ -157,7 +170,7 @@ pub fn reconcile(
             "\"unsupported_count\":{},",
             "\"gnucobol_rs_version\":{},",
             "\"kobold_data_shim_version\":{},",
-            "\"decode_output_sha256\":{},",
+            "\"decode_output_sha256\":{}{},",
             "\"byte_stable_replay\":true}}\n"
         ),
         jstr(fixture),
@@ -172,6 +185,7 @@ pub fn reconcile(
         jstr(gnucobol_rs_version),
         jstr(SHIM_VERSION),
         jstr(&decode_output_sha256),
+        binary_note,
     );
 
     Ok(ReconResult {

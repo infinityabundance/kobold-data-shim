@@ -6,3 +6,5 @@
              88 HOURLY     VALUE "H".
           05 GROSS-PAY    PIC S9(7)V99 COMP-3.
           05 DEDUCTIONS   PIC S9(5)V99 COMP-3.
+          05 EMPLOYEE-NO    PIC 9(6) COMP.
+          05 HOURS-BUCKET   PIC S9(4) COMP-5.

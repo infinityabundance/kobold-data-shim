@@ -29,7 +29,7 @@ pub use gnucobol_rs::copybook::CopyResolver;
 use gnucobol_rs::pic::COB_TYPE_ALPHANUMERIC;
 use gnucobol_rs::{
     build_field, eval_88, CondLit, CondValue, Condition, Decimal, FieldAttr, Usage,
-    COB_TYPE_NUMERIC_DISPLAY, COB_TYPE_NUMERIC_PACKED,
+    COB_TYPE_NUMERIC_BINARY, COB_TYPE_NUMERIC_DISPLAY, COB_TYPE_NUMERIC_PACKED,
 };
 use std::collections::HashMap;
 
@@ -119,6 +119,9 @@ fn parse_item(decl: &str) -> Option<(Item, Usage, bool, bool)> {
                 }
             }
             "COMP-3" | "PACKED-DECIMAL" | "COMPUTATIONAL-3" => usage = Usage::Comp3,
+            "COMP" | "BINARY" | "COMPUTATIONAL" => usage = Usage::Comp,
+            "COMP-5" => usage = Usage::Comp5,
+            "COMP-X" => usage = Usage::CompX,
             "DISPLAY" => usage = Usage::Display,
             "OCCURS" => {
                 // "OCCURS min TO max TIMES DEPENDING ON item" (ODO) or "OCCURS n TIMES" (fixed).
@@ -314,7 +317,9 @@ fn parse_program(copybook: &str, resolver: &impl CopyResolver) -> Result<Program
         if let Some((ref pic, _, _, _)) = item.pic {
             if let Ok(pf) = build_field(pic, usage, sep, lead) {
                 let cat = match pf.attr.field_type {
-                    COB_TYPE_NUMERIC_DISPLAY | COB_TYPE_NUMERIC_PACKED => "numeric",
+                    COB_TYPE_NUMERIC_DISPLAY
+                    | COB_TYPE_NUMERIC_PACKED
+                    | COB_TYPE_NUMERIC_BINARY => "numeric",
                     COB_TYPE_ALPHANUMERIC => "alphanumeric",
                     _ => "unsupported",
                 };
@@ -359,6 +364,7 @@ fn decode_fields(prog: &Program, record: &[u8]) -> Vec<DecodedField> {
             (Some((attr, "numeric")), Some(bytes)) => {
                 let d = match attr.field_type {
                     COB_TYPE_NUMERIC_PACKED => Decimal::from_packed(bytes, attr),
+                    COB_TYPE_NUMERIC_BINARY => Decimal::from_binary(bytes, attr),
                     _ => Decimal::from_display(bytes, attr),
                 };
                 ("numeric", format_decimal(&d), hex(bytes))

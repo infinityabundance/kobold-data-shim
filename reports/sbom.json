@@ -2,13 +2,13 @@
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
   "metadata": {
-    "component": { "type": "application", "name": "kobold-data-shim", "version": "0.2.0", "licenses": [{ "license": { "id": "Apache-2.0" } }] }
+    "component": { "type": "application", "name": "kobold-data-shim", "version": "0.3.0", "licenses": [{ "license": { "id": "Apache-2.0" } }] }
   },
   "components": [
     {
       "type": "library",
       "name": "gnucobol-rs",
-      "version": "0.3.2",
+      "version": "0.4.1",
       "licenses": [{ "license": { "id": "LGPL-3.0-or-later" } }],
       "description": "Oracle-proven GnuCOBOL 3.2 compatibility courts (MOVE/PIC/layout/COPY/arithmetic).",
       "externalReferences": [{ "type": "vcs", "url": "https://github.com/infinityabundance/gnucobol-rs" }]

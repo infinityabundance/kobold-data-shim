@@ -25,9 +25,9 @@ fn check_family(fixture: &str, dir: &str, copybook: &str, record_len: usize) {
     let data = std::fs::read(format!("{dir}/input.dat")).unwrap();
     let resolver = DirResolver(dir.to_string());
 
-    let r1 = reconcile(fixture, &cb, &data, record_len, "0.3.2", &resolver).unwrap();
+    let r1 = reconcile(fixture, &cb, &data, record_len, "0.4.1", &resolver).unwrap();
     // byte-stable replay: a second run is identical.
-    let r2 = reconcile(fixture, &cb, &data, record_len, "0.3.2", &resolver).unwrap();
+    let r2 = reconcile(fixture, &cb, &data, record_len, "0.4.1", &resolver).unwrap();
     assert_eq!(
         r1.jsonl, r2.jsonl,
         "{fixture}: jsonl not byte-stable across runs"
@@ -64,9 +64,9 @@ fn check_family(fixture: &str, dir: &str, copybook: &str, record_len: usize) {
 
 #[test]
 fn corpus_is_byte_stable_and_golden() {
-    check_family("account-status-v1", "recon/account", "ACCTREC.cpy", 33);
-    check_family("payroll-v1", "recon/payroll", "PAYREC.cpy", 19);
-    check_family("insurance-policy-v1", "recon/insurance", "INSREC.cpy", 19);
+    check_family("account-status-v1", "recon/account", "ACCTREC.cpy", 42);
+    check_family("payroll-v1", "recon/payroll", "PAYREC.cpy", 25);
+    check_family("insurance-policy-v1", "recon/insurance", "INSREC.cpy", 26);
 }
 
 #[test]
@@ -78,8 +78,8 @@ fn conditions_come_from_eval_88_only() {
         "account-status-v1",
         &cb,
         &data,
-        33,
-        "0.3.2",
+        42,
+        "0.4.1",
         &DirResolver("recon/account".into()),
     )
     .unwrap();

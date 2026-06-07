@@ -30,11 +30,13 @@ the `condition-set` mutation fixture: condition name → parent bytes → decode
 
 | Fixture | Records | Fields | Conditions | Notable |
 |---------|--------:|-------:|-----------:|---------|
-| `account-status-v1` | 120 | 5 | 4 | `COPY ACCTNAME REPLACING ==:P:== BY ==CUST==`; alpha 88s (`ACTIVE`/`CLOSED`/`DELINQUENT`/`CUST-GOLD`); COMP-3 `BALANCE` |
-| `payroll-v1` | 120 | 5 | 2 | alpha 88 (`SALARIED`/`HOURLY`); two COMP-3 (`GROSS-PAY`/`DEDUCTIONS`) |
-| `insurance-policy-v1` | 120 | 4 | 2 | **numeric-range** 88s (`LOW-RISK VALUE 1 THRU 3`, `HIGH-RISK 7 THRU 9`); COMP-3 `PREMIUM` |
+| `account-status-v1` | 120 | 8 | 4 | `COPY ACCTNAME REPLACING ==:P:== BY ==CUST==`; alpha 88s (`ACTIVE`/`CLOSED`/`DELINQUENT`/`CUST-GOLD`); COMP-3 `BALANCE` |
+| `payroll-v1` | 120 | 7 | 2 | alpha 88 (`SALARIED`/`HOURLY`); two COMP-3 (`GROSS-PAY`/`DEDUCTIONS`) |
+| `insurance-policy-v1` | 120 | 6 | 2 | **numeric-range** 88s (`LOW-RISK VALUE 1 THRU 3`, `HIGH-RISK 7 THRU 9`); COMP-3 `PREMIUM` |
 
-**360 records total**, 0 unsupported. Each family's `receipt.md` carries its audit hashes.
+**360 records total**, 0 unsupported. **KOBOLD.DATA.2** added COMP/COMP-5/COMP-X **binary fields** to
+all three families (decoded via `GNURUST.14`; the audit records the endian assumption), proving the
+binary court composes end-to-end. Each family's `receipt.md` carries its audit hashes.
 
 ## Evidence (acceptance gate)
 
