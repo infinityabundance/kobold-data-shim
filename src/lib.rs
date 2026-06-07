@@ -38,6 +38,7 @@ pub mod sha256;
 
 /// A decoded elementary field.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct DecodedField {
     pub name: String,
     pub level: u16,
@@ -255,6 +256,7 @@ fn make_lit(tok: &str) -> CondLit {
 
 /// A decoded LEVEL-88 condition: its truth (or an error marker) for the current record.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct DecodedCondition {
     pub name: String,
     pub parent: String,
@@ -264,6 +266,7 @@ pub struct DecodedCondition {
 
 /// A fully decoded record: its fields and condition-name truths.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct DecodedRecord {
     pub fields: Vec<DecodedField>,
     pub conditions: Vec<DecodedCondition>,
@@ -433,6 +436,23 @@ pub fn decode_record(
         fields: decode_fields(&prog, record),
         conditions: eval_conditions(&prog, record),
     })
+}
+
+/// Decode a buffer of fixed-length records into one [`DecodedRecord`] per record (fields +
+/// conditions). A higher-level iterator over `data.chunks(record_len)`; a trailing partial record is
+/// decoded as-is (its short fields are reported `unsupported`, never guessed).
+pub fn decode_all(
+    copybook: &str,
+    data: &[u8],
+    record_len: usize,
+    resolver: &impl CopyResolver,
+) -> Result<Vec<DecodedRecord>, ShimError> {
+    if record_len == 0 {
+        return Err(ShimError::Layout("record_len must be > 0".into()));
+    }
+    data.chunks(record_len)
+        .map(|chunk| decode_record(copybook, chunk, resolver))
+        .collect()
 }
 
 /// Decode a record against a copybook with no nested `COPY`.

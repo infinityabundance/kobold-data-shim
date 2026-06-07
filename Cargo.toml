@@ -1,6 +1,6 @@
 [package]
 name = "kobold-data-shim"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2021"
 rust-version = "1.74"
 description = "A verifiable COBOL record-decoding shim for data-migration pipelines: ingest a copybook + a raw record dump and decode it byte-exactly via the oracle-proven gnucobol-rs courts (PIC, layout, COPY, decimal MOVE)."
@@ -16,6 +16,13 @@ categories = ["encoding", "command-line-utilities", "parsing"]
 # The byte-exact, oracle-proven kernel. NOTE: gnucobol-rs is LGPL-3.0-or-later; see NOTICE for the
 # linking obligations this places on distributed binaries. This crate's own source is Apache-2.0.
 gnucobol-rs = "0.4.1"
+# Optional, off by default: derive Serialize/Deserialize on the decoded types for Rust services
+# consuming legacy feeds. Never changes decode semantics (values stay strings — never floats).
+serde = { version = "1", features = ["derive"], optional = true }
+
+[features]
+default = []
+serde = ["dep:serde"]
 
 [lints.rust]
 unsafe_code = "forbid"

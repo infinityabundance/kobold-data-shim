@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.1]
+- **Ergonomics.** Optional `serde` feature (off by default) derives `Serialize` on `DecodedField`/
+  `DecodedCondition`/`DecodedRecord` for Rust services consuming legacy feeds — values stay strings,
+  never floats, so it cannot change decode semantics. New `decode_all(copybook, data, record_len,
+  resolver)` higher-level iterator returns one `DecodedRecord` per fixed-length record.
+
 ## [0.3.0]
 - **KOBOLD.DATA.2 — binary fields in the reconciliation corpus.** The shim now decodes `USAGE COMP`/
   `BINARY`/`COMP-5`/`COMP-X` via `gnucobol-rs` `GNURUST.14` (`Decimal::from_binary`); the three corpus

@@ -46,7 +46,9 @@ assert_eq!(fields.iter().find(|f| f.name == "CUST-BAL").unwrap().value, "-12.34"
 ```
 
 `decode_with_resolver(copybook, record, resolver)` expands `COPY` statements via a caller-supplied
-`CopyResolver` (the CLI resolves them from `--copydir`). `decode_record(...)` additionally evaluates
+`CopyResolver` (the CLI resolves them from `--copydir`). `decode_all(copybook, data, record_len, resolver)` is a higher-level iterator yielding one decoded
+record per fixed-length record. An optional `serde` feature (off by default) derives `Serialize` on the
+decoded types (values stay strings — never floats). `decode_record(...)` additionally evaluates
 **LEVEL-88 condition names** (`gnucobol-rs`' `eval_88`), so a decoded record carries both fields and
 condition truths.
 
