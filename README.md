@@ -77,10 +77,13 @@ the sealed `gnucobol-rs` courts:
 
 ```json
 {"record_index":0,
- "fields":{"ACCOUNT-ID":"100000","STATUS-CODE":"A","BALANCE":"5459318.55","CUST-NAME":"CUSTOMER 0000","CUST-TIER":"G"},
+ "fields":{"ACCOUNT-ID":"100000","STATUS-CODE":"A","BALANCE":"5459318.55","CUST-NAME":"CUSTOMER 0000","CUST-TIER":"G","BRANCH-NO":"5895","RISK-SCORE":"796453","INTERNAL-ID":"900453110"},
  "conditions":{"ACTIVE":true,"CLOSED":false,"DELINQUENT":false,"CUST-GOLD":true},
- "audit":{"raw_offset":0,"raw_len":33,"record_sha256":"…"}}
+ "audit":{"raw_offset":0,"raw_len":42,"record_sha256":"…"}}
 ```
+
+(`BRANCH-NO` is `COMP`, `RISK-SCORE` is `COMP-X`, `INTERNAL-ID` is `COMP-5` — binary fields decoded
+from raw storage, not text-converted.)
 
 A committed corpus of 3 fixture families (account / payroll / insurance, 360 records, with `COPY ... REPLACING`, COMP-3, **COMP/COMP-5/COMP-X binary**, **cp500 EBCDIC text** (explicit `--encoding`, binary/packed passthrough), and alpha + numeric-range LEVEL-88s) is in [`recon/`](recon/), with a
 sealing receipt at [`recon/RECEIPT-KOBOLD-RECON-1.md`](recon/RECEIPT-KOBOLD-RECON-1.md). The output is
