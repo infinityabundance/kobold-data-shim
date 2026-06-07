@@ -1,5 +1,8 @@
 # kobold-data-shim
 
+<img src="assets/kobold_data_shim.png" width="200">
+
+
 **A verifiable COBOL record-decoding shim for data-migration pipelines.** Give it a copybook and a
 raw record dump; it tells you — byte-exactly — *what that COBOL record actually meant*, by composing
 the oracle-proven [`gnucobol-rs`](https://github.com/infinityabundance/gnucobol-rs) compatibility
