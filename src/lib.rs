@@ -24,6 +24,7 @@
 use gnucobol_rs::copybook::expand;
 use gnucobol_rs::layout::{lay_out, Item, Odo};
 
+pub use file::{ingest, ExitCode, Ingest, IngestPolicy, PartialRecord, TrailingNewline};
 /// Re-exported so callers can implement a custom copybook search path for [`decode_with_resolver`].
 pub use gnucobol_rs::copybook::CopyResolver;
 use gnucobol_rs::pic::COB_TYPE_ALPHANUMERIC;
@@ -67,6 +68,7 @@ fn logical_bytes<'a>(
 }
 use std::collections::HashMap;
 
+pub mod file;
 pub mod operator;
 pub mod recon;
 pub mod sha256;

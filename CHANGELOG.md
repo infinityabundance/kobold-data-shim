@@ -8,6 +8,13 @@
   The cp500 passthrough test proves EBCDIC decode never touches COMP-6 bytes. Operator dirty-data check
   validates COMP-6 (all-digit nibbles, no sign nibble). 0 unsupported, byte-stable, CLI==lib. Requires
   gnucobol-rs ^0.7. Additive composition, no shim API change -> patch.
+- **KOBOLD.FILE.1 — fixed-record container ingest discipline.** New `file` module + `ingest` CLI
+  subcommand: split a raw stream into records of an explicit `--record-len`, with stable true offsets,
+  a byte-stable `kobold-file-ingest-v1` file audit, and **named policies** (`--trailing-newline
+  reject|allow-final-lf|strip-final-lf`, `--partial-record reject|evidence`). **Strict by default**: a
+  partial trailing record or unexpected final newline is rejected, never silently absorbed. Stable
+  documented exit codes (0 success / 1 evidence-warnings / 2 invalid-shape / 3 unsupported-surface /
+  4 internal / 5 io-or-config). This is KOBOLD ingest reliability, NOT GnuCOBOL file I/O parity.
 
 ## [0.6.2]
 - **KOBOLD.DATA.5 — cp500 numeric DISPLAY composed.** EBCDIC zoned-decimal numeric DISPLAY fields now

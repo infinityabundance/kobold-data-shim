@@ -118,6 +118,36 @@ Because the kernel is oracle-proven, a migration can ship **evidence**, not asse
 non-claims become part of the compliance package (SOX/audits). This shim adds the per-record audit
 trail (raw bytes + the court each value came from + any `unsupported` field).
 
+## Fixed-record container ingest (`KOBOLD.FILE.1`)
+
+Before decoding fields, split a raw byte stream into records with **defensible offsets and failure
+modes** — ingest reliability, not GnuCOBOL file I/O parity:
+
+```
+kobold-recon ingest data.bin --record-len 55 \
+    [--trailing-newline reject|allow-final-lf|strip-final-lf] \
+    [--partial-record reject|evidence]
+```
+
+It prints a byte-stable `kobold-file-ingest-v1` audit (`input_sha256`, `input_len`, `record_len`,
+`record_count`, policies, `offsets.{first,last}`, verdict) and exits with a **stable code**. The default
+is **strict**: a partial trailing record or an unexpected final newline is rejected — never silently
+absorbed, resynced, or repaired; the encoding is always explicit.
+
+| exit | meaning |
+|------|---------|
+| 0 | success |
+| 1 | decoded with evidence warnings (preserved partial record / dirty fields) |
+| 2 | invalid input shape (record_len 0, partial under strict, unexpected trailing LF) |
+| 3 | unsupported COBOL surface |
+| 4 | internal invariant failure |
+| 5 | I/O or configuration error |
+
+> **Doctrine.** KOBOLD.FILE.1 admits only explicit fixed-record container ingest: bytes are split by a
+> caller-declared record length with stable offsets, policies, manifests, and exit codes, while GnuCOBOL
+> file I/O, indexed files, line-sequential runtime behavior, auto-resynchronization, and silent repair
+> remain outside the claim.
+
 ## Scope & honest edges
 
 Claims are **layered**: a court is *sealed in `gnucobol-rs`* (proven byte-exact vs the oracle) and

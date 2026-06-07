@@ -167,12 +167,72 @@ fn cmd_decode(rest: &[String]) -> ExitCode {
     }
 }
 
+/// `ingest <data> --record-len N [--trailing-newline reject|allow-final-lf|strip-final-lf]
+///         [--partial-record reject|evidence]` — fixed-record container ingest (KOBOLD.FILE.1).
+/// Prints the file-level audit manifest and exits with the stable verdict code (0/1/2/5).
+fn cmd_ingest(args: &[String]) -> ExitCode {
+    use kobold_data_shim::file::{ingest, IngestPolicy, PartialRecord, TrailingNewline};
+    let (mut record_len, mut pos): (Option<usize>, Vec<String>) = (None, Vec::new());
+    let (mut nl, mut partial) = (TrailingNewline::Reject, PartialRecord::Reject);
+    let mut it = args.iter();
+    while let Some(a) = it.next() {
+        match a.as_str() {
+            "--record-len" => record_len = it.next().and_then(|s| s.parse::<usize>().ok()),
+            "--trailing-newline" => match it.next().map(|s| s.as_str()) {
+                Some("reject") => nl = TrailingNewline::Reject,
+                Some("allow-final-lf") => nl = TrailingNewline::AllowFinalLf,
+                Some("strip-final-lf") => nl = TrailingNewline::StripFinalLf,
+                other => {
+                    eprintln!("--trailing-newline must be reject|allow-final-lf|strip-final-lf (got {other:?})");
+                    return ExitCode::from(5);
+                }
+            },
+            "--partial-record" => match it.next().map(|s| s.as_str()) {
+                Some("reject") => partial = PartialRecord::Reject,
+                Some("evidence") => partial = PartialRecord::Evidence,
+                other => {
+                    eprintln!("--partial-record must be reject|evidence (got {other:?})");
+                    return ExitCode::from(5);
+                }
+            },
+            s => pos.push(s.to_string()),
+        }
+    }
+    let (Some(df), Some(rlen)) = (pos.first().cloned(), record_len) else {
+        eprintln!("usage: kobold-recon ingest <data> --record-len N [--trailing-newline reject|allow-final-lf|strip-final-lf] [--partial-record reject|evidence]");
+        return ExitCode::from(5);
+    };
+    let data = match std::fs::read(&df) {
+        Ok(d) => d,
+        Err(e) => {
+            eprintln!("data: {e}");
+            return ExitCode::from(5);
+        }
+    };
+    let policy = IngestPolicy {
+        record_len: rlen,
+        trailing_newline: nl,
+        partial_record: partial,
+    };
+    match ingest(&data, &policy) {
+        Ok(ing) => {
+            println!("{}", ing.file_audit_json());
+            ExitCode::from(ing.verdict.code() as u8)
+        }
+        Err(e) => {
+            eprintln!("ingest: {e}");
+            ExitCode::from(e.exit.code() as u8)
+        }
+    }
+}
+
 fn main() -> ExitCode {
     let argv: Vec<String> = std::env::args().skip(1).collect();
     match argv.first().map(|s| s.as_str()) {
         Some("explain") => return cmd_explain(&argv[1..]),
         Some("totals") => return cmd_totals(&argv[1..]),
         Some("decode") => return cmd_decode(&argv[1..]),
+        Some("ingest") => return cmd_ingest(&argv[1..]),
         _ => {}
     }
     let mut fixture = None;
