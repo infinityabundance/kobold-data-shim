@@ -1,0 +1,30 @@
+kobold-data-shim
+Copyright 2026 infinityabundance
+
+This product's own source code is licensed under the Apache License, Version 2.0
+(see LICENSE).
+
+-------------------------------------------------------------------------------
+THIRD-PARTY / LINKING NOTICE (read before distributing binaries)
+-------------------------------------------------------------------------------
+
+kobold-data-shim depends on and links the crate `gnucobol-rs`, which is licensed
+under the GNU Lesser General Public License, version 3 or later (LGPL-3.0-or-later),
+because it is a faithful derivative port of GnuCOBOL's libcob.
+
+Consequences:
+  * This crate's OWN source remains Apache-2.0 and may be combined with proprietary
+    code that merely USES it (LGPL permits a "work that uses the Library").
+  * However, any DISTRIBUTED BINARY (Lambda layer, container image, executable)
+    that statically links gnucobol-rs is a "Combined Work" under LGPL-3.0 section 4.
+    To distribute such a binary you must:
+      - give prominent notice that gnucobol-rs (LGPL-3.0+) is used, and
+      - provide the means to relink (e.g. ship this crate's object files / source,
+        which crates.io already makes available) against a modified gnucobol-rs, and
+      - convey the LGPL-3.0 text with the gnucobol-rs source.
+  * A future *clean-room, permissively licensed* decimal/layout kernel (a separate,
+    from-spec reimplementation that does NOT read libcob) would remove this
+    obligation for fully-permissive distribution. It does not exist yet.
+
+This NOTICE is informational, not legal advice. The pinned oracle and parity
+evidence for gnucobol-rs live at https://github.com/infinityabundance/gnucobol-rs .
