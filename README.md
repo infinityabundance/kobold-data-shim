@@ -92,7 +92,7 @@ bytes → `eval_88` true) is the [`recon/condition-set/`](recon/condition-set/) 
 
 ```text
 Mainframe VSAM/flat export
-        │  (AWS Transfer Family / Direct Connect; EBCDIC→ASCII converted early)
+        │  (AWS Transfer Family / Direct Connect; cp500 EBCDIC text decoded in-shim via --encoding)
         ▼
    S3 landing zone ──(ObjectCreated)──► Lambda / AWS Batch / Glue
         │                                   │ kobold-data-shim:
@@ -116,12 +116,24 @@ trail (raw bytes + the court each value came from + any `unsupported` field).
 
 ## Scope & honest edges
 
-- **Sealed (byte-exact):** COMP-3 / zoned / display numerics, `PIC` widths, record offsets, fixed
-  `OCCURS`, `REDEFINES (≤ target)`, `FILLER`, `COPY [REPLACING]`.
-- **Fails closed (surfaced for reconciliation):** edited pictures, `P` scaling, `OCCURS DEPENDING
-  ON`, binary/`COMP`/float, EBCDIC-host sign mode. Convert EBCDIC→ASCII *before* this shim until an
-  EBCDIC court lands.
+Claims are **layered**: a court is *sealed in `gnucobol-rs`* (proven byte-exact vs the oracle) and
+*composed into the KOBOLD corpus* (exercised end-to-end here). Both are stated, never conflated.
+
+- **Composed in the KOBOLD reconciliation corpus (byte-stable, CLI == library):**
+  DISPLAY / COMP-3 / **COMP / COMP-5 / COMP-X**, `PIC` widths + record offsets, fixed `OCCURS` /
+  `REDEFINES (≤ target)` / `OCCURS DEPENDING ON` physical-max / `FILLER`, `COPY [REPLACING]`,
+  **cp500 alphanumeric DISPLAY text with explicit `--encoding`** (binary/packed pass through untouched),
+  and LEVEL-88 condition predicates.
+- **Sealed in `gnucobol-rs`, not yet composed into the KOBOLD corpus:** edited-picture decode
+  (`GNURUST.16a`+`16b` — `Z 9 , . - + $ * CR DB B 0 /`); awaiting `KOBOLD.DATA.4`.
+- **Fails closed / future (surfaced for reconciliation, never guessed):** numeric DISPLAY under cp500
+  (EBCDIC zoned sign), `COMP-6`, floats, `SET ... TO FALSE` / FALSE clause, mixed/auto-detected
+  encodings, and any **business truth beyond what the copybook + sealed courts prove**.
 - **Host:** little-endian ASCII (matches the `gnucobol-rs` sealed claim).
+
+Decoded fields are **accountable**: `kobold-recon explain` shows provenance, raw bytes, the sealed
+courts used, and the stale-copybook risk; `kobold-recon totals` gives control totals; `decode
+--dirty-mode` preserves dirty bytes as evidence (see the operator section above).
 
 See [`docs/enterprise-readiness.md`](docs/enterprise-readiness.md) for the SBOM / CVE / SLA stance.
 
