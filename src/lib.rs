@@ -21,8 +21,11 @@
 
 #![forbid(unsafe_code)]
 
-use gnucobol_rs::copybook::{expand, CopyResolver};
+use gnucobol_rs::copybook::expand;
 use gnucobol_rs::layout::{lay_out, Item};
+
+/// Re-exported so callers can implement a custom copybook search path for [`decode_with_resolver`].
+pub use gnucobol_rs::copybook::CopyResolver;
 use gnucobol_rs::pic::COB_TYPE_ALPHANUMERIC;
 use gnucobol_rs::{
     build_field, Decimal, FieldAttr, Usage, COB_TYPE_NUMERIC_DISPLAY, COB_TYPE_NUMERIC_PACKED,
