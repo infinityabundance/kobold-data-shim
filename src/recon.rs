@@ -128,14 +128,35 @@ pub fn reconcile_encoded(
 
         let mut obj = format!("{{\"record_index\":{index},\"fields\":{{");
         let mut first = true;
+        // Edited fields keep their PRESENTATION string in `fields`; the oracle-proven numeric goes to
+        // the per-record audit `edited` block (KOBOLD.DATA.4) — never a silent replacement.
+        let mut edited_block = String::new();
+        let mut efirst = true;
         for f in &rec.fields {
             match f.category {
-                "numeric" | "alphanumeric" => {
+                "numeric" | "alphanumeric" | "edited" => {
                     if !first {
                         obj.push(',');
                     }
                     first = false;
                     obj.push_str(&format!("{}:{}", jstr(&f.name), jstr(&f.value)));
+                    if f.category == "edited" {
+                        if !efirst {
+                            edited_block.push(',');
+                        }
+                        efirst = false;
+                        let num = f
+                            .edited_numeric
+                            .as_deref()
+                            .map(jstr)
+                            .unwrap_or_else(|| "null".to_string());
+                        edited_block.push_str(&format!(
+                            "{}:{{\"raw_text\":{},\"numeric_value\":{},\"claim\":\"GNURUST.16\",\"domain\":\"edited-display-decode\"}}",
+                            jstr(&f.name),
+                            jstr(&f.value),
+                            num
+                        ));
+                    }
                 }
                 "unsupported" => {
                     if index == 0 {
@@ -166,11 +187,17 @@ pub fn reconcile_encoded(
             }
         }
         let rec_sha = sha256_hex(chunk);
+        let edited_audit = if edited_block.is_empty() {
+            String::new()
+        } else {
+            format!(",\"edited\":{{{edited_block}}}")
+        };
         obj.push_str(&format!(
-            "}},\"audit\":{{\"raw_offset\":{},\"raw_len\":{},\"record_sha256\":{}}}}}",
+            "}},\"audit\":{{\"raw_offset\":{},\"raw_len\":{},\"record_sha256\":{}{}}}}}",
             index * record_len,
             chunk.len(),
-            jstr(&rec_sha)
+            jstr(&rec_sha),
+            edited_audit
         ));
         jsonl.push_str(&obj);
         jsonl.push('\n');

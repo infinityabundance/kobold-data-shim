@@ -73,12 +73,123 @@ fn enc(pic: &str, usage: Usage, signed: bool, value: &str) -> Vec<u8> {
     out
 }
 
+/// COBOL numeric→edited editing for the admitted decode subset (test infra only — NOT a sealed court;
+/// the *decode* of these bytes is GNURUST.16, proven against `cobc` by `edited_sweep.sh`, and the
+/// exact pics used here are in that sweep). Handles `Z 9 , .`, a leading `+`/`-`, and trailing `CR`/`DB`.
+fn edit(pic: &str, value: &str) -> Vec<u8> {
+    let neg = value.starts_with('-');
+    let t = value.trim_start_matches(['-', '+']);
+    let (ip, fp) = t.split_once('.').unwrap_or((t, ""));
+    let chars: Vec<char> = pic.chars().collect();
+    // trailing CR / DB
+    let mut crdb: Option<&str> = None;
+    let mut body: &[char] = &chars;
+    if chars.len() >= 2 {
+        let last2: String = chars[chars.len() - 2..].iter().collect();
+        if last2 == "CR" {
+            crdb = Some("CR");
+            body = &chars[..chars.len() - 2];
+        } else if last2 == "DB" {
+            crdb = Some("DB");
+            body = &chars[..chars.len() - 2];
+        }
+    }
+    // leading sign
+    let mut lead: Option<char> = None;
+    let mut start = 0usize;
+    if matches!(body.first(), Some('+') | Some('-')) {
+        lead = body.first().copied();
+        start = 1;
+    }
+    let int_pos = body[start..]
+        .iter()
+        .take_while(|&&c| c != '.')
+        .filter(|&&c| c == '9' || c == 'Z')
+        .count();
+    let frac_pos = match body.iter().position(|&c| c == '.') {
+        Some(d) => body[d + 1..]
+            .iter()
+            .filter(|&&c| c == '9' || c == 'Z')
+            .count(),
+        None => 0,
+    };
+    // align value digits to the picture's digit positions
+    let mut intd: Vec<u8> = ip.bytes().map(|b| b - b'0').collect();
+    while intd.len() < int_pos {
+        intd.insert(0, 0);
+    }
+    let extra = intd.len().saturating_sub(int_pos);
+    intd.drain(0..extra);
+    let mut fracd: Vec<u8> = fp.bytes().map(|b| b - b'0').collect();
+    fracd.resize(frac_pos, 0);
+    fracd.truncate(frac_pos);
+
+    let mut out = Vec::new();
+    if let Some(s) = lead {
+        out.push(if s == '-' {
+            if neg {
+                b'-'
+            } else {
+                b' '
+            }
+        } else if neg {
+            b'-'
+        } else {
+            b'+'
+        });
+    }
+    let (mut ii, mut fi, mut suppress, mut after_dot) = (0usize, 0usize, true, false);
+    for &c in &body[start..] {
+        match c {
+            '9' if after_dot => {
+                out.push(b'0' + fracd[fi]);
+                fi += 1;
+            }
+            '9' => {
+                out.push(b'0' + intd[ii]);
+                ii += 1;
+                suppress = false;
+            }
+            'Z' => {
+                let d = intd[ii];
+                ii += 1;
+                if suppress && d == 0 {
+                    out.push(b' ');
+                } else {
+                    out.push(b'0' + d);
+                    suppress = false;
+                }
+            }
+            ',' => out.push(if suppress { b' ' } else { b',' }),
+            '.' => {
+                out.push(b'.');
+                after_dot = true;
+                suppress = false;
+            }
+            _ => {}
+        }
+    }
+    if let Some(s) = crdb {
+        out.extend_from_slice(if neg { s.as_bytes() } else { b"  " });
+    }
+    out
+}
+
+/// `(pic, usage, signed, value)`. An edited picture (one `pic::build_field` rejects) routes to `edit`.
 type Field<'a> = (&'a str, Usage, bool, String);
+
+fn is_edited(pic: &str) -> bool {
+    build_field(pic, Usage::Display, false, false).is_err()
+}
 
 fn record(fields: &[Field]) -> Vec<u8> {
     let mut out = Vec::new();
     for (pic, usage, signed, value) in fields {
-        out.extend_from_slice(&enc(pic, *usage, *signed, value));
+        if is_edited(pic) {
+            out.extend_from_slice(&edit(pic, value));
+        } else {
+            out.extend_from_slice(&enc(pic, *usage, *signed, value));
+        }
     }
     out
 }
@@ -128,6 +239,12 @@ fn account(n: usize) -> Vec<u8> {
                     rng.below(999999999)
                 ),
             ),
+            (
+                "ZZ,ZZ9.99",
+                Usage::Display,
+                false,
+                format!("{}.{:02}", rng.below(99999), rng.below(100)),
+            ),
         ]));
     }
     out
@@ -166,6 +283,17 @@ fn payroll(n: usize) -> Vec<u8> {
                     rng.below(2000)
                 ),
             ),
+            (
+                "ZZ9.99CR",
+                Usage::Display,
+                true,
+                format!(
+                    "{}{}.{:02}",
+                    if rng.below(3) == 0 { "-" } else { "" },
+                    rng.below(999),
+                    rng.below(100)
+                ),
+            ),
         ]));
     }
     out
@@ -192,6 +320,12 @@ fn insurance(n: usize) -> Vec<u8> {
             ),
             ("9(10)", Usage::CompX, false, format!("{}", 1_000_000 + i)),
             ("9(4)", Usage::Comp, false, format!("{}", rng.below(50))),
+            (
+                "ZZZ,ZZ9.99",
+                Usage::Display,
+                false,
+                format!("{}.{:02}", rng.below(999999), rng.below(100)),
+            ),
         ]));
     }
     out

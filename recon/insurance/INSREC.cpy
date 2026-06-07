@@ -7,3 +7,4 @@
           05 TERM-MONTHS   PIC 9(3).
           05 POLICY-SEQUENCE PIC 9(10) COMP-X.
           05 CLAIM-COUNT     PIC 9(4) COMP.
+          05 POLICY-EDIT    PIC ZZZ,ZZ9.99.

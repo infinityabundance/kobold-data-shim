@@ -74,18 +74,24 @@ pub use operator::{control_totals, explain_field, DirtyMode, STALE_COPYBOOK_RISK
 /// A decoded elementary field.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[non_exhaustive]
 pub struct DecodedField {
     pub name: String,
     pub level: u16,
     pub offset: usize,
     pub size: usize,
-    /// `"numeric"`, `"alphanumeric"`, `"group"`, or `"unsupported"`.
+    /// `"numeric"`, `"alphanumeric"`, `"edited"`, `"group"`, or `"unsupported"`.
     pub category: &'static str,
     /// The decoded value: a canonical decimal string for numerics, text for alphanumerics, or an
     /// explanatory marker for unsupported/short fields.
     pub value: String,
     /// The raw field bytes as lowercase hex (the audit trail).
     pub raw_hex: String,
+    /// For an **edited** DISPLAY field (`GNURUST.16`): the oracle-proven numeric interpretation of the
+    /// presentation string (`value`). `None` for non-edited fields. JSON keeps `value` as the edited
+    /// presentation string; this is the *interpreted* numeric, recorded as audit evidence — never a
+    /// silent replacement.
+    pub edited_numeric: Option<String>,
 }
 
 /// What went wrong decoding a record against a copybook.
@@ -395,6 +401,32 @@ fn parse_program(copybook: &str, resolver: &impl CopyResolver) -> Result<Program
                         source_line: prov.map(|p| p.line).unwrap_or(0),
                     },
                 );
+            } else if usage == Usage::Display && gnucobol_rs::edited_size(pic).is_ok() {
+                // An edited DISPLAY picture (GNURUST.16): decoded by the `edited` court, not `pic`.
+                // (An edited PIC with a binary/packed USAGE is the wrong domain → falls through to
+                // "unsupported" below, since it only reaches here when usage == Display.)
+                attrs.insert(
+                    item.name.clone(),
+                    (
+                        FieldAttr {
+                            field_type: 0,
+                            digits: 0,
+                            scale: 0,
+                            flags: 0,
+                        },
+                        "edited",
+                    ),
+                );
+                let prov = expanded.provenance.get(idx);
+                meta.insert(
+                    item.name.clone(),
+                    FieldMeta {
+                        pic: pic.clone(),
+                        usage: "DISPLAY (edited)".to_string(),
+                        source_file: prov.map(|p| p.file.clone()).unwrap_or_default(),
+                        source_line: prov.map(|p| p.line).unwrap_or(0),
+                    },
+                );
             } else {
                 attrs.insert(
                     item.name.clone(),
@@ -435,12 +467,13 @@ fn decode_fields(prog: &Program, record: &[u8], encoding: Encoding) -> Vec<Decod
     let mut out = Vec::new();
     for l in &prog.laid {
         let slice = record.get(l.offset..l.offset + l.size);
-        let (category, value, raw) = match (prog.attrs.get(&l.name), slice) {
-            (None, _) => ("group", String::from("(group)"), String::new()),
+        let (category, value, raw, edited_numeric) = match (prog.attrs.get(&l.name), slice) {
+            (None, _) => ("group", String::from("(group)"), String::new(), None),
             (Some((_, "unsupported")), Some(bytes)) => (
                 "unsupported",
                 String::from("(unsupported PIC/usage)"),
                 hex(bytes),
+                None,
             ),
             // Numeric DISPLAY (zoned) under EBCDIC is the deferred EBCDIC-zoned sign court (GNURUST.15
             // admits only text): fail closed rather than mis-decode the sign nibbles.
@@ -451,6 +484,7 @@ fn decode_fields(prog: &Program, record: &[u8], encoding: Encoding) -> Vec<Decod
                     "unsupported",
                     String::from("(numeric DISPLAY under EBCDIC: zoned sign deferred)"),
                     hex(bytes),
+                    None,
                 )
             }
             (Some((attr, "numeric")), Some(bytes)) => {
@@ -460,7 +494,31 @@ fn decode_fields(prog: &Program, record: &[u8], encoding: Encoding) -> Vec<Decod
                     COB_TYPE_NUMERIC_BINARY => Decimal::from_binary(bytes, attr),
                     _ => Decimal::from_display(bytes, attr),
                 };
-                ("numeric", format_decimal(&d), hex(bytes))
+                ("numeric", format_decimal(&d), hex(bytes), None)
+            }
+            // Edited DISPLAY field (GNURUST.16): JSON keeps the presentation string; the oracle-proven
+            // numeric goes to `edited_numeric` (audit), never silently replacing the text. Edited under
+            // cp500 is deferred (the decode table is ASCII) → fail closed.
+            (Some((_, "edited")), Some(bytes)) if encoding == Encoding::Cp500 => (
+                "unsupported",
+                String::from("(edited picture under EBCDIC: deferred)"),
+                hex(bytes),
+                None,
+            ),
+            (Some((_, "edited")), Some(bytes)) => {
+                let pic = prog.meta.get(&l.name).map(|m| m.pic.as_str()).unwrap_or("");
+                match gnucobol_rs::decode_edited(pic, bytes) {
+                    Ok(d) => {
+                        let num = d.numeric_value.as_ref().map(format_decimal);
+                        ("edited", d.raw_text.trim_end().to_string(), hex(bytes), num)
+                    }
+                    Err(_) => (
+                        "unsupported",
+                        String::from("(edited decode failed)"),
+                        hex(bytes),
+                        None,
+                    ),
+                }
             }
             (Some((_, "alphanumeric")), Some(bytes)) => (
                 "alphanumeric",
@@ -468,13 +526,15 @@ fn decode_fields(prog: &Program, record: &[u8], encoding: Encoding) -> Vec<Decod
                     .trim_end()
                     .to_string(),
                 hex(bytes),
+                None,
             ),
             (Some(_), None) => (
                 "unsupported",
                 String::from("(record too short for field)"),
                 String::new(),
+                None,
             ),
-            (Some((_, other)), Some(bytes)) => (*other, String::new(), hex(bytes)),
+            (Some((_, other)), Some(bytes)) => (*other, String::new(), hex(bytes), None),
         };
         out.push(DecodedField {
             name: l.name.clone(),
@@ -484,6 +544,7 @@ fn decode_fields(prog: &Program, record: &[u8], encoding: Encoding) -> Vec<Decod
             category,
             value,
             raw_hex: raw,
+            edited_numeric,
         });
     }
     out

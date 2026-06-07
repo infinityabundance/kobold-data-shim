@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.0]
+- **KOBOLD.DATA.4 — edited-picture decode composed into the corpus.** The shim now decodes **edited
+  DISPLAY fields** via `gnucobol-rs` `GNURUST.16` (slot-based). JSON keeps the **presentation string**
+  (e.g. `"PRINT-BAL":"13,448.49"`); the oracle-proven **numeric interpretation** goes to a per-record
+  audit `edited` block (`raw_text`/`numeric_value`/`claim`/`domain`) — never a silent replacement.
+  Added one edited field per family (account `ZZ,ZZ9.99`, payroll `ZZ9.99CR`, insurance `ZZZ,ZZ9.99`);
+  the corpus generator's editor is cobc-faithful (verified against `MOVE numeric → edited → DISPLAY`).
+  0 unsupported, byte-stable, CLI == library. Negatives: edited under cp500 and unsupported edited
+  symbols fail closed.
+- **Breaking (semver-minor):** `DecodedField` gains `edited_numeric: Option<String>` and is now
+  `#[non_exhaustive]` (so future fields stay additive). Bumped to gnucobol-rs ^0.6.2.
+
 ## [0.5.0]
 - **KOBOLD.OPERATOR.1 — operator trust layer.** New `operator` module + CLI subcommands that make every
   decoded field accountable:

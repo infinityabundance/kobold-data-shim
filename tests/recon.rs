@@ -80,9 +80,9 @@ fn check_family(fixture: &str, dir: &str, copybook: &str, record_len: usize) {
 
 #[test]
 fn corpus_is_byte_stable_and_golden() {
-    check_family("account-status-v1", "recon/account", "ACCTREC.cpy", 42);
-    check_family("payroll-v1", "recon/payroll", "PAYREC.cpy", 25);
-    check_family("insurance-policy-v1", "recon/insurance", "INSREC.cpy", 26);
+    check_family("account-status-v1", "recon/account", "ACCTREC.cpy", 51);
+    check_family("payroll-v1", "recon/payroll", "PAYREC.cpy", 33);
+    check_family("insurance-policy-v1", "recon/insurance", "INSREC.cpy", 36);
 }
 
 #[test]
@@ -195,6 +195,69 @@ fn numeric_display_under_cp500_fails_closed() {
 }
 
 #[test]
+fn edited_picture_composes_end_to_end() {
+    // KOBOLD.DATA.4: an edited DISPLAY field decodes; JSON keeps the presentation string, the audit
+    // carries the oracle-proven numeric interpretation. 0 unsupported.
+    let dir = "recon/account";
+    let cb = std::fs::read_to_string(format!("{dir}/ACCTREC.cpy")).unwrap();
+    let data = std::fs::read(format!("{dir}/input.dat")).unwrap();
+    let r = reconcile(
+        "account-status-v1",
+        &cb,
+        &data,
+        51,
+        "0.6.2",
+        &DirResolver(dir.into()),
+    )
+    .unwrap();
+    assert_eq!(
+        r.unsupported_count, 0,
+        "edited fields must decode, not fail closed"
+    );
+    let first = r.jsonl.lines().next().unwrap();
+    assert!(
+        first.contains("\"PRINT-BAL\":\"13,448.49\""),
+        "edited presentation in fields: {first}"
+    );
+    assert!(
+        first.contains("\"edited\":{\"PRINT-BAL\":{\"raw_text\":\"13,448.49\",\"numeric_value\":\"13448.49\",\"claim\":\"GNURUST.16\""),
+        "edited audit block: {first}"
+    );
+    let rec = kobold_data_shim::decode_record_encoded(
+        &cb,
+        &data[..51],
+        &DirResolver(dir.into()),
+        Encoding::Ascii,
+    )
+    .unwrap();
+    let pb = rec.fields.iter().find(|f| f.name == "PRINT-BAL").unwrap();
+    assert_eq!(pb.category, "edited");
+    assert_eq!(pb.value, "13,448.49");
+    assert_eq!(pb.edited_numeric.as_deref(), Some("13448.49"));
+}
+
+#[test]
+fn edited_negatives_fail_closed() {
+    let res = kobold_data_shim::NoCopy;
+    // edited under cp500 (the decode table is ASCII) → unsupported, not mis-decoded.
+    let cb = "       01 R.\n           05 E PIC ZZ9.99.\n";
+    let rec =
+        kobold_data_shim::decode_record_encoded(cb, b" 12.34", &res, Encoding::Cp500).unwrap();
+    assert_eq!(
+        rec.fields.iter().find(|f| f.name == "E").unwrap().category,
+        "unsupported"
+    );
+    // an unsupported edited symbol → never the edited domain.
+    let cb3 = "       01 R.\n           05 E PIC ZZ%9.\n";
+    if let Ok(r) = kobold_data_shim::decode_record_encoded(cb3, b" %5", &res, Encoding::Ascii) {
+        assert_ne!(
+            r.fields.iter().find(|f| f.name == "E").map(|f| f.category),
+            Some("edited")
+        );
+    }
+}
+
+#[test]
 fn conditions_come_from_eval_88_only() {
     // Spot-check: the account corpus emits ACTIVE/CLOSED/DELINQUENT/CUST-GOLD, all from eval_88.
     let cb = std::fs::read_to_string("recon/account/ACCTREC.cpy").unwrap();
@@ -203,7 +266,7 @@ fn conditions_come_from_eval_88_only() {
         "account-status-v1",
         &cb,
         &data,
-        42,
+        51,
         "0.4.1",
         &DirResolver("recon/account".into()),
     )

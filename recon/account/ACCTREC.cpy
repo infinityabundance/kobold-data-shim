@@ -9,3 +9,4 @@
           05 BRANCH-NO      PIC 9(4) COMP.
           05 RISK-SCORE     PIC 9(6) COMP-X.
           05 INTERNAL-ID    PIC S9(9) COMP-5.
+          05 PRINT-BAL      PIC ZZ,ZZ9.99.

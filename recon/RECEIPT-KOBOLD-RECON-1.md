@@ -36,7 +36,9 @@ the `condition-set` mutation fixture: condition name → parent bytes → decode
 
 **360 records total**, 0 unsupported. **KOBOLD.DATA.2** added COMP/COMP-5/COMP-X **binary fields** to
 all three families (decoded via `GNURUST.14`; the audit records the endian assumption), proving the
-binary court composes end-to-end. **KOBOLD.DATA.3** added an `account-cp500` EBCDIC family
+binary court composes end-to-end. **KOBOLD.DATA.4** added an **edited-picture** field per
+family (account `ZZ,ZZ9.99`, payroll `ZZ9.99CR`, insurance `ZZZ,ZZ9.99`): JSON keeps the presentation
+string, the audit `edited` block carries the GNURUST.16-proven numeric (never a silent replacement). **KOBOLD.DATA.3** added an `account-cp500` EBCDIC family
 (120 records): cp500 text decoded via `GNURUST.15`, LEVEL-88 on decoded values, and COMP/COMP-3/
 COMP-5/COMP-X passed through as raw storage (proven untouched by the EBCDIC layer). Each family's `receipt.md` carries its audit hashes.
 
