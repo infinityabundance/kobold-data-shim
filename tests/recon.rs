@@ -96,7 +96,7 @@ fn cp500_family_composes_end_to_end() {
         "account-cp500",
         &cb,
         &data,
-        34,
+        51,
         "0.5.0",
         &res,
         Encoding::Cp500,
@@ -106,7 +106,7 @@ fn cp500_family_composes_end_to_end() {
         "account-cp500",
         &cb,
         &data,
-        34,
+        51,
         "0.5.0",
         &res,
         Encoding::Cp500,
@@ -134,64 +134,81 @@ fn cp500_family_composes_end_to_end() {
         "EBCDIC text decoded"
     );
     assert!(first.contains("\"ACTIVE\":true") && first.contains("\"CUST-GOLD\":true"));
+    // KOBOLD.DATA.5: cp500 NUMERIC DISPLAY (zoned) decoded via GNURUST.17 + audit names the court.
+    assert!(
+        first.contains("\"REGION-CODE\":")
+            && first.contains("\"LIMIT-AMT\":")
+            && first.contains("\"RISK-PERCENT\":"),
+        "cp500 numeric DISPLAY decoded: {first}"
+    );
+    assert!(
+        r.audit_json.contains("\"zoned_sign\":\"GNURUST.17\""),
+        "audit names the GNURUST.17 numeric court"
+    );
 }
 
 #[test]
 fn ebcdic_never_touches_binary_or_packed() {
-    // The most important negative: decoding the SAME bytes as ASCII vs cp500 changes ONLY the
-    // alphanumeric (text) fields; every COMP/COMP-3/COMP-5/COMP-X value is identical (raw passthrough).
+    // The crucial invariant: BINARY/PACKED fields are RAW storage — their decoded value is IDENTICAL
+    // under ASCII vs cp500 (passthrough). cp500 DISPLAY numerics (REGION-CODE/LIMIT-AMT/RISK-PERCENT)
+    // are encoding-sensitive and legitimately DIFFER — that's GNURUST.17, not a passthrough violation.
     let dir = "recon/account-cp500";
     let cb = std::fs::read_to_string(format!("{dir}/ACCTCP5.cpy")).unwrap();
     let data = std::fs::read(format!("{dir}/input.ebc")).unwrap();
     let res = DirResolver(dir.into());
     let ascii =
-        kobold_data_shim::decode_record_encoded(&cb, &data[..34], &res, Encoding::Ascii).unwrap();
+        kobold_data_shim::decode_record_encoded(&cb, &data[..51], &res, Encoding::Ascii).unwrap();
     let cp500 =
-        kobold_data_shim::decode_record_encoded(&cb, &data[..34], &res, Encoding::Cp500).unwrap();
-    let mut numeric_same = 0;
-    let mut alpha_diff = 0;
+        kobold_data_shim::decode_record_encoded(&cb, &data[..51], &res, Encoding::Cp500).unwrap();
+    let passthrough = ["BALANCE", "BRANCH-NO", "RISK-SCORE", "INTERNAL-ID"]; // COMP-3/COMP/COMP-X/COMP-5
+    let mut passthrough_same = 0;
     for (a, e) in ascii.fields.iter().zip(cp500.fields.iter()) {
-        match a.category {
-            "numeric" => {
+        if a.category == "numeric" {
+            // No field's raw bytes are ever mutated by decoding.
+            assert_eq!(a.raw_hex, e.raw_hex, "{}: raw bytes differ", a.name);
+            if passthrough.contains(&a.name.as_str()) {
                 assert_eq!(
                     a.value, e.value,
-                    "{}: COMP/packed value changed under EBCDIC!",
+                    "{}: binary/packed value changed under EBCDIC!",
                     a.name
                 );
-                assert_eq!(
-                    a.raw_hex, e.raw_hex,
-                    "{}: raw bytes differ (should be identical)",
-                    a.name
-                );
-                numeric_same += 1;
+                passthrough_same += 1;
             }
-            "alphanumeric" if a.value != e.value => alpha_diff += 1,
-            _ => {}
         }
     }
     assert!(
-        numeric_same >= 4,
-        "expected >=4 packed/binary fields proven untouched, got {numeric_same}"
-    );
-    assert!(
-        alpha_diff >= 1,
-        "encoding should change at least one text field (else test is vacuous)"
+        passthrough_same >= 4,
+        "expected >=4 binary/packed fields proven untouched, got {passthrough_same}"
     );
 }
 
 #[test]
-fn numeric_display_under_cp500_fails_closed() {
-    // EBCDIC zoned numeric (sign mode) is deferred (GNURUST.15 admits only text) -> fail closed.
+fn numeric_display_under_cp500_decodes_via_gnurust17() {
+    // KOBOLD.DATA.5: cp500 numeric DISPLAY now decodes (GNURUST.17), no longer fails closed.
+    // F1 F2 F3 F4 = unsigned 1234; F1 F2 D3 = signed -123 (0xD zone).
+    let res = kobold_data_shim::NoCopy;
+    let cb = "       01 R.\n           05 AMT PIC 9(4).\n";
+    let r = kobold_data_shim::decode_record_encoded(cb, b"\xF1\xF2\xF3\xF4", &res, Encoding::Cp500)
+        .unwrap();
+    let amt = r.fields.iter().find(|f| f.name == "AMT").unwrap();
+    assert_eq!((amt.category, amt.value.as_str()), ("numeric", "1234"));
+    let cb2 = "       01 R.\n           05 N PIC S9(3).\n";
+    let neg = kobold_data_shim::decode_record_encoded(cb2, b"\xF1\xF2\xD3", &res, Encoding::Cp500)
+        .unwrap();
+    assert_eq!(
+        neg.fields.iter().find(|f| f.name == "N").unwrap().value,
+        "-123"
+    );
+}
+
+#[test]
+fn cp500_numeric_under_ascii_unchanged() {
+    // The ASCII path is untouched: PIC 9(4) under ASCII still decodes the ASCII way (not EBCDIC).
     let cb = "       01 R.\n           05 AMT PIC 9(4).\n";
     let res = kobold_data_shim::NoCopy;
-    let rec =
-        kobold_data_shim::decode_record_encoded(cb, b"\xF1\xF2\xF3\xF4", &res, Encoding::Cp500)
-            .unwrap();
+    let rec = kobold_data_shim::decode_record_encoded(cb, b"1234", &res, Encoding::Ascii).unwrap();
     let amt = rec.fields.iter().find(|f| f.name == "AMT").unwrap();
-    assert_eq!(
-        amt.category, "unsupported",
-        "numeric DISPLAY under cp500 must fail closed, not mis-decode"
-    );
+    assert_eq!((amt.category, amt.value.as_str()), ("numeric", "1234"));
 }
 
 #[test]

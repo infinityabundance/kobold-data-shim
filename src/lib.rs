@@ -475,17 +475,13 @@ fn decode_fields(prog: &Program, record: &[u8], encoding: Encoding) -> Vec<Decod
                 hex(bytes),
                 None,
             ),
-            // Numeric DISPLAY (zoned) under EBCDIC is the deferred EBCDIC-zoned sign court (GNURUST.15
-            // admits only text): fail closed rather than mis-decode the sign nibbles.
+            // Numeric DISPLAY (zoned) under EBCDIC decodes through GNURUST.17 (KOBOLD.DATA.5): cp500
+            // translate + the cob_get_sign_ebcdic overpunch sign. Binary/packed stay RAW (next arm).
             (Some((attr, "numeric")), Some(bytes))
                 if encoding == Encoding::Cp500 && attr.field_type == COB_TYPE_NUMERIC_DISPLAY =>
             {
-                (
-                    "unsupported",
-                    String::from("(numeric DISPLAY under EBCDIC: zoned sign deferred)"),
-                    hex(bytes),
-                    None,
-                )
+                let d = Decimal::from_ebcdic_zoned(bytes, attr);
+                ("numeric", format_decimal(&d), hex(bytes), None)
             }
             (Some((attr, "numeric")), Some(bytes)) => {
                 // Binary/packed are RAW storage domains — never text-converted (passthrough).

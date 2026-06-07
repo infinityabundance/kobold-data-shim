@@ -85,7 +85,7 @@ pub fn reconcile_encoded(
     // Refuse silent JSON key collisions before producing any output (KOBOLD.OPERATOR.1).
     crate::operator::check_copybook_collisions(copybook, resolver)?;
     let enc_note = match encoding {
-        crate::Encoding::Cp500 => ",\"encoding\":{\"record_default\":\"cp500\",\"source\":\"gnucobol-3.2:ebcdic500_ascii8bit.ttbl\",\"auto_detected\":false,\"binary_fields_passthrough\":true,\"packed_fields_passthrough\":true,\"mixed_encoding_claim\":false}",
+        crate::Encoding::Cp500 => ",\"encoding\":{\"record_default\":\"cp500\",\"source\":\"gnucobol-3.2:ebcdic500_ascii8bit.ttbl\",\"auto_detected\":false,\"binary_fields_passthrough\":true,\"packed_fields_passthrough\":true,\"mixed_encoding_claim\":false,\"numeric_display\":{\"zoned_sign\":\"GNURUST.17\",\"code_page\":\"cp500\"}}",
         crate::Encoding::Ascii => "",
     };
 

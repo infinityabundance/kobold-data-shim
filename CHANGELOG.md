@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.2]
+- **KOBOLD.DATA.5 — cp500 numeric DISPLAY composed.** EBCDIC zoned-decimal numeric DISPLAY fields now
+  decode through `gnucobol-rs` `GNURUST.17` (was fail-closed). The `account-cp500` family gained
+  REGION-CODE `9(3)`, LIMIT-AMT `S9(7)V99`, RISK-PERCENT `9(3)V99` (record-len 51); the audit `encoding`
+  block gains `numeric_display: {zoned_sign: GNURUST.17, code_page: cp500}`. Binary/packed stay raw
+  passthrough (proven); cp500 zoned numerics legitimately differ ASCII-vs-cp500 (encoding-sensitive).
+  0 unsupported, byte-stable, CLI == library. Bumped to gnucobol-rs ^0.6.3. Additive court composition,
+  no API change → patch.
+
 ## [0.6.1]
 - Fix: the operator test fixtures used the pre-DATA.4 account record-len (42); updated to 51. Test-
   only change (0.6.0's library/corpus were correct; only its bundled operator tests failed).

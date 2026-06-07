@@ -11,3 +11,6 @@
            05  BRANCH-NO      PIC 9(4) COMP.
            05  RISK-SCORE     PIC 9(6) COMP-X.
            05  INTERNAL-ID    PIC S9(9) COMP-5.
+           05 REGION-CODE    PIC 9(3).
+           05 LIMIT-AMT      PIC S9(7)V99.
+           05 RISK-PERCENT   PIC 9(3)V99.

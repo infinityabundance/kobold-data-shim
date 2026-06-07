@@ -37,6 +37,38 @@ fn ebcdic_text(value: &str, width: usize) -> Vec<u8> {
     a.iter().map(|&c| ascii_to_ebcdic(c)).collect()
 }
 
+/// Encode a numeric value as **EBCDIC zoned-decimal** bytes (KOBOLD.DATA.5): digits `0xF0..0xF9`, and
+/// the final byte's zone is `0xC` (positive), `0xD` (negative), or `0xF` (unsigned). `ndig` digit
+/// positions; the shim decodes these via `GNURUST.17`.
+fn ebcdic_zoned(value: &str, ndig: usize, signed: bool) -> Vec<u8> {
+    let neg = value.starts_with('-');
+    let t = value.trim_start_matches(['-', '+']);
+    let digits: String = t.chars().filter(|c| c.is_ascii_digit()).collect();
+    let mut d: Vec<u8> = digits.bytes().map(|b| b - b'0').collect();
+    while d.len() < ndig {
+        d.insert(0, 0);
+    }
+    let extra = d.len().saturating_sub(ndig);
+    d.drain(0..extra);
+    let last = ndig - 1;
+    d.iter()
+        .enumerate()
+        .map(|(i, &digit)| {
+            if i == last {
+                if signed && neg {
+                    0xD0 | digit
+                } else if signed {
+                    0xC0 | digit
+                } else {
+                    0xF0 | digit
+                }
+            } else {
+                0xF0 | digit
+            }
+        })
+        .collect()
+}
+
 /// Encode a numeric value into raw packed/binary storage via the sealed `cob_move` (NOT EBCDIC).
 fn enc_numeric(pic: &str, usage: Usage, signed: bool, value: &str) -> Vec<u8> {
     let pf = build_field(pic, usage, false, false).expect("pic");
@@ -118,6 +150,20 @@ fn main() {
                 rng.below(999999999)
             ),
         ));
+        // cp500 numeric DISPLAY (EBCDIC zoned) — decoded via GNURUST.17.
+        out.extend_from_slice(&ebcdic_zoned(&format!("{}", rng.below(1000)), 3, false)); // REGION-CODE 9(3)
+        let limit = format!(
+            "{}{}{:02}",
+            if rng.below(4) == 0 { "-" } else { "" },
+            rng.below(9_999_999),
+            rng.below(100)
+        );
+        out.extend_from_slice(&ebcdic_zoned(&limit, 9, true)); // LIMIT-AMT S9(7)V99 (9 digits)
+        out.extend_from_slice(&ebcdic_zoned(
+            &format!("{}{:02}", rng.below(1000), rng.below(100)),
+            5,
+            false,
+        )); // RISK-PERCENT 9(3)V99
     }
     std::fs::write("recon/account-cp500/input.ebc", &out).unwrap();
     eprintln!(

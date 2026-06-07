@@ -127,10 +127,9 @@ Claims are **layered**: a court is *sealed in `gnucobol-rs`* (proven byte-exact 
   DISPLAY / COMP-3 / **COMP / COMP-5 / COMP-X**, `PIC` widths + record offsets, fixed `OCCURS` /
   `REDEFINES (≤ target)` / `OCCURS DEPENDING ON` physical-max / `FILLER`, `COPY [REPLACING]`,
   **cp500 alphanumeric DISPLAY text with explicit `--encoding`** (binary/packed pass through untouched),
-  LEVEL-88 condition predicates, and **edited-picture decode** (`GNURUST.16` — presentation string in
-  JSON, oracle-proven numeric in the audit `edited` block).
-- **Fails closed / future (surfaced for reconciliation, never guessed):** numeric DISPLAY under cp500
-  (EBCDIC zoned sign), `COMP-6`, floats, `SET ... TO FALSE` / FALSE clause, mixed/auto-detected
+  LEVEL-88 condition predicates, **edited-picture decode** (`GNURUST.16` — presentation string in JSON,
+  numeric in the audit `edited` block), and **cp500 numeric DISPLAY / EBCDIC zoned sign** (`GNURUST.17`).
+- **Fails closed / future (surfaced for reconciliation, never guessed):** `COMP-6`, floats, `SET ... TO FALSE` / FALSE clause, mixed/auto-detected
   encodings, and any **business truth beyond what the copybook + sealed courts prove**.
 - **Host:** little-endian ASCII (matches the `gnucobol-rs` sealed claim).
 
