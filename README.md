@@ -45,9 +45,10 @@ The single most error-prone step is *interpreting the legacy bytes*: packed deci
 implied decimal scale, `REDEFINES`, `OCCURS`, copybook `COPY`/`REPLACING`. A silent off-by-one in a
 sign nibble or a scale is a financial discrepancy. This shim makes that step **verifiable**:
 
-- it reuses the sealed [`gnucobol-rs`] courts (`GNURUST.2` MOVE bytes, `GNURUST.3` PIC, `GNURUST.4`
-  layout, `GNURUST.5/6` COPY/REPLACING, `GNURUST.7` arithmetic), each proven against the GnuCOBOL
-  oracle;
+- it reuses the sealed [`gnucobol-rs`] courts — `GNURUST.2` MOVE bytes, `GNURUST.3/9` PIC (+P),
+  `GNURUST.4/10` layout (+ODO), `GNURUST.5/6` COPY/REPLACING, `GNURUST.7/13` arithmetic, `GNURUST.8`
+  VALUE, `GNURUST.11/12` LEVEL-88, `GNURUST.14` binary COMP/COMP-5/COMP-X, `GNURUST.15` cp500 EBCDIC
+  decode, `GNURUST.16` edited-picture decode — each proven against the GnuCOBOL oracle;
 - it **fails closed** on anything outside those courts, so unsupported fields are surfaced for
   reconciliation rather than mis-decoded.
 
