@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.6.1]
+- Fix: the operator test fixtures used the pre-DATA.4 account record-len (42); updated to 51. Test-
+  only change (0.6.0's library/corpus were correct; only its bundled operator tests failed).
+
 ## [0.6.0]
 - **KOBOLD.DATA.4 — edited-picture decode composed into the corpus.** The shim now decodes **edited
   DISPLAY fields** via `gnucobol-rs` `GNURUST.16` (slot-based). JSON keeps the **presentation string**

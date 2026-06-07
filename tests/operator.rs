@@ -19,7 +19,7 @@ fn explain_field_is_accountable() {
     let data = std::fs::read("recon/account/input.dat").unwrap();
     let json = explain_field(
         &cb,
-        &data[..42],
+        &data[..51],
         "BALANCE",
         &Dir("recon/account".into()),
         Encoding::Ascii,
@@ -42,7 +42,7 @@ fn explain_includes_dependent_conditions() {
     let data = std::fs::read("recon/account/input.dat").unwrap();
     let json = explain_field(
         &cb,
-        &data[..42],
+        &data[..51],
         "STATUS-CODE",
         &Dir("recon/account".into()),
         Encoding::Ascii,
@@ -59,7 +59,7 @@ fn control_totals_accounting() {
     let json = control_totals(
         &cb,
         &data,
-        42,
+        51,
         &Dir("recon/account".into()),
         Encoding::Ascii,
     )
