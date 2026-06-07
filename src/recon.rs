@@ -11,7 +11,7 @@
 //! non-decoded evidence rather than guessed.
 
 use crate::sha256::sha256_hex;
-use crate::{decode_record, CopyResolver, ShimError};
+use crate::{CopyResolver, ShimError};
 
 /// Crate version, for the audit receipt.
 pub const SHIM_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -55,9 +55,37 @@ pub fn reconcile(
     gnucobol_rs_version: &str,
     resolver: &impl CopyResolver,
 ) -> Result<ReconResult, ShimError> {
+    reconcile_encoded(
+        fixture,
+        copybook,
+        data,
+        record_len,
+        gnucobol_rs_version,
+        resolver,
+        crate::Encoding::Ascii,
+    )
+}
+
+/// Reconcile under an explicit [`crate::Encoding`] (`KOBOLD.DATA.3`). Under `Cp500`, alphanumeric
+/// DISPLAY fields are decoded via the sealed `GNURUST.15` table; binary/packed fields pass through as
+/// raw storage. The encoding (and its non-claims) are recorded in the audit; it is never auto-detected.
+#[allow(clippy::too_many_arguments)]
+pub fn reconcile_encoded(
+    fixture: &str,
+    copybook: &str,
+    data: &[u8],
+    record_len: usize,
+    gnucobol_rs_version: &str,
+    resolver: &impl CopyResolver,
+    encoding: crate::Encoding,
+) -> Result<ReconResult, ShimError> {
     if record_len == 0 {
         return Err(ShimError::Layout("record_len must be > 0".into()));
     }
+    let enc_note = match encoding {
+        crate::Encoding::Cp500 => ",\"encoding\":{\"record_default\":\"cp500\",\"source\":\"gnucobol-3.2:ebcdic500_ascii8bit.ttbl\",\"auto_detected\":false,\"binary_fields_passthrough\":true,\"packed_fields_passthrough\":true,\"mixed_encoding_claim\":false}",
+        crate::Encoding::Ascii => "",
+    };
 
     let expanded =
         gnucobol_rs::expand(copybook, resolver).map_err(|e| ShimError::Copy(e.to_string()))?;
@@ -86,7 +114,7 @@ pub fn reconcile(
 
     for (index, chunk) in data.chunks(record_len).enumerate() {
         record_count += 1;
-        let rec = decode_record(copybook, chunk, resolver)?;
+        let rec = crate::decode_record_encoded(copybook, chunk, resolver, encoding)?;
         if index == 0 {
             // The layout is identical for every record; sign it once for the audit.
             for f in &rec.fields {
@@ -170,7 +198,7 @@ pub fn reconcile(
             "\"unsupported_count\":{},",
             "\"gnucobol_rs_version\":{},",
             "\"kobold_data_shim_version\":{},",
-            "\"decode_output_sha256\":{}{},",
+            "\"decode_output_sha256\":{}{}{},",
             "\"byte_stable_replay\":true}}\n"
         ),
         jstr(fixture),
@@ -186,6 +214,7 @@ pub fn reconcile(
         jstr(SHIM_VERSION),
         jstr(&decode_output_sha256),
         binary_note,
+        enc_note,
     );
 
     Ok(ReconResult {

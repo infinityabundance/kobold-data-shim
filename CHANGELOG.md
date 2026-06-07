@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.0]
+- **KOBOLD.DATA.3 — cp500 EBCDIC in the reconciliation packet.** New `Encoding` enum (`Ascii`/`Cp500`,
+  never auto-detected) + `reconcile_encoded` / `decode_record_encoded`. Under `Cp500`, alphanumeric
+  DISPLAY fields (and the parent bytes feeding `eval_88`) are decoded through the sealed `GNURUST.15`
+  cp500 table; **binary and packed fields pass through as raw storage and are never text-converted.**
+  New `account-cp500` fixture family (120 records, 0 unsupported, byte-stable); the audit carries an
+  `encoding` block (`record_default`, `source`, `auto_detected:false`, `*_passthrough:true`). The CLI
+  gains `--encoding ascii|cp500`. Numeric DISPLAY under cp500 (EBCDIC zoned sign) fails closed.
+  Proven: `ebcdic_never_touches_binary_or_packed` (same bytes, ASCII vs cp500 → identical numeric
+  values). Bumped to gnucobol-rs ^0.5. Additive API → semver-minor.
+
 ## [0.3.2]
 - Fix: the corpus golden test is now version-agnostic (compares decode/layout/input hashes, not the
   embedded tool-version metadata that changes per release), so a shim version bump no longer drifts

@@ -28,9 +28,42 @@ use gnucobol_rs::layout::{lay_out, Item, Odo};
 pub use gnucobol_rs::copybook::CopyResolver;
 use gnucobol_rs::pic::COB_TYPE_ALPHANUMERIC;
 use gnucobol_rs::{
-    build_field, eval_88, CondLit, CondValue, Condition, Decimal, FieldAttr, Usage,
-    COB_TYPE_NUMERIC_BINARY, COB_TYPE_NUMERIC_DISPLAY, COB_TYPE_NUMERIC_PACKED,
+    build_field, eval_88, translate_byte, CodePage, CondLit, CondValue, Condition, Decimal,
+    FieldAttr, Usage, COB_TYPE_NUMERIC_BINARY, COB_TYPE_NUMERIC_DISPLAY, COB_TYPE_NUMERIC_PACKED,
 };
+
+/// The record's declared character encoding (`KOBOLD.DATA.3`). **Never auto-detected** — the caller
+/// states it. `Cp500` decodes *alphanumeric DISPLAY* fields through the sealed `GNURUST.15` table;
+/// **binary and packed fields are raw storage domains and are never text-converted.**
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+pub enum Encoding {
+    /// Native ASCII (the default): DISPLAY bytes are already the logical characters.
+    #[default]
+    Ascii,
+    /// EBCDIC cp500 (`ebcdic500_ascii8bit`): alphanumeric DISPLAY fields are decoded via the sealed
+    /// `GNURUST.15` table. Numeric DISPLAY (EBCDIC zoned) is **deferred** and fails closed.
+    Cp500,
+}
+
+/// The logical (decoded) bytes of a field under `encoding`: for an **alphanumeric** field under
+/// [`Encoding::Cp500`], each raw EBCDIC byte is translated to its ASCII byte via the sealed
+/// `GNURUST.15` cp500 table; otherwise the raw bytes are returned unchanged (binary/packed/ASCII
+/// pass through untouched).
+fn logical_bytes<'a>(
+    category: &str,
+    encoding: Encoding,
+    raw: &'a [u8],
+) -> std::borrow::Cow<'a, [u8]> {
+    match (encoding, category) {
+        (Encoding::Cp500, "alphanumeric") => std::borrow::Cow::Owned(
+            raw.iter()
+                .map(|&b| translate_byte(CodePage::Cp500, b).unwrap_or(b))
+                .collect(),
+        ),
+        _ => std::borrow::Cow::Borrowed(raw),
+    }
+}
 use std::collections::HashMap;
 
 pub mod recon;
@@ -353,7 +386,7 @@ fn parse_program(copybook: &str, resolver: &impl CopyResolver) -> Result<Program
     })
 }
 
-fn decode_fields(prog: &Program, record: &[u8]) -> Vec<DecodedField> {
+fn decode_fields(prog: &Program, record: &[u8], encoding: Encoding) -> Vec<DecodedField> {
     let mut out = Vec::new();
     for l in &prog.laid {
         let slice = record.get(l.offset..l.offset + l.size);
@@ -364,7 +397,19 @@ fn decode_fields(prog: &Program, record: &[u8]) -> Vec<DecodedField> {
                 String::from("(unsupported PIC/usage)"),
                 hex(bytes),
             ),
+            // Numeric DISPLAY (zoned) under EBCDIC is the deferred EBCDIC-zoned sign court (GNURUST.15
+            // admits only text): fail closed rather than mis-decode the sign nibbles.
+            (Some((attr, "numeric")), Some(bytes))
+                if encoding == Encoding::Cp500 && attr.field_type == COB_TYPE_NUMERIC_DISPLAY =>
+            {
+                (
+                    "unsupported",
+                    String::from("(numeric DISPLAY under EBCDIC: zoned sign deferred)"),
+                    hex(bytes),
+                )
+            }
             (Some((attr, "numeric")), Some(bytes)) => {
+                // Binary/packed are RAW storage domains — never text-converted (passthrough).
                 let d = match attr.field_type {
                     COB_TYPE_NUMERIC_PACKED => Decimal::from_packed(bytes, attr),
                     COB_TYPE_NUMERIC_BINARY => Decimal::from_binary(bytes, attr),
@@ -374,7 +419,9 @@ fn decode_fields(prog: &Program, record: &[u8]) -> Vec<DecodedField> {
             }
             (Some((_, "alphanumeric")), Some(bytes)) => (
                 "alphanumeric",
-                String::from_utf8_lossy(bytes).trim_end().to_string(),
+                String::from_utf8_lossy(&logical_bytes("alphanumeric", encoding, bytes))
+                    .trim_end()
+                    .to_string(),
                 hex(bytes),
             ),
             (Some(_), None) => (
@@ -397,13 +444,16 @@ fn decode_fields(prog: &Program, record: &[u8]) -> Vec<DecodedField> {
     out
 }
 
-fn eval_conditions(prog: &Program, record: &[u8]) -> Vec<DecodedCondition> {
+fn eval_conditions(prog: &Program, record: &[u8], encoding: Encoding) -> Vec<DecodedCondition> {
     let mut out = Vec::new();
     for (parent, cond) in &prog.conditions {
         let value = prog.laid.iter().find(|l| &l.name == parent).and_then(|l| {
-            let (attr, _) = prog.attrs.get(parent)?;
+            let (attr, cat) = prog.attrs.get(parent)?;
             let bytes = record.get(l.offset..l.offset + l.size)?;
-            eval_88(attr, bytes, cond).ok()
+            // 88 literals in the copybook are ASCII, so under cp500 the parent's alphanumeric bytes
+            // are decoded to ASCII *before* the predicate runs (raw EBCDIC would never match).
+            let logical = logical_bytes(cat, encoding, bytes);
+            eval_88(attr, &logical, cond).ok()
         });
         out.push(DecodedCondition {
             name: cond.name.clone(),
@@ -422,19 +472,32 @@ pub fn decode_with_resolver(
     resolver: &impl CopyResolver,
 ) -> Result<Vec<DecodedField>, ShimError> {
     let prog = parse_program(copybook, resolver)?;
-    Ok(decode_fields(&prog, record))
+    Ok(decode_fields(&prog, record, Encoding::Ascii))
 }
 
-/// Decode a record into its fields **and** its LEVEL-88 condition-name truths (`eval_88`).
+/// Decode a record into its fields **and** its LEVEL-88 condition-name truths (`eval_88`), as native
+/// ASCII. For EBCDIC, use [`decode_record_encoded`].
 pub fn decode_record(
     copybook: &str,
     record: &[u8],
     resolver: &impl CopyResolver,
 ) -> Result<DecodedRecord, ShimError> {
+    decode_record_encoded(copybook, record, resolver, Encoding::Ascii)
+}
+
+/// Decode a record under an explicit [`Encoding`] (`KOBOLD.DATA.3`). Under [`Encoding::Cp500`],
+/// alphanumeric DISPLAY fields (and the parent bytes feeding `eval_88`) are decoded through the
+/// sealed `GNURUST.15` cp500 table; binary/packed fields pass through as raw storage.
+pub fn decode_record_encoded(
+    copybook: &str,
+    record: &[u8],
+    resolver: &impl CopyResolver,
+    encoding: Encoding,
+) -> Result<DecodedRecord, ShimError> {
     let prog = parse_program(copybook, resolver)?;
     Ok(DecodedRecord {
-        fields: decode_fields(&prog, record),
-        conditions: eval_conditions(&prog, record),
+        fields: decode_fields(&prog, record, encoding),
+        conditions: eval_conditions(&prog, record, encoding),
     })
 }
 

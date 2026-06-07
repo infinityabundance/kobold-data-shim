@@ -32,6 +32,7 @@ fn main() -> ExitCode {
     let mut copydir = None;
     let mut out = None;
     let mut gver = String::from("0.3.2");
+    let mut encoding = kobold_data_shim::Encoding::Ascii;
     let args: Vec<String> = std::env::args().skip(1).collect();
     let mut it = args.iter();
     while let Some(a) = it.next() {
@@ -47,6 +48,18 @@ fn main() -> ExitCode {
                     gver = v.clone();
                 }
             }
+            // Explicit, never auto-detected. Only the oracle-admitted code page (cp500) is accepted.
+            "--encoding" => match it.next().map(|s| s.as_str()) {
+                Some("ascii") => encoding = kobold_data_shim::Encoding::Ascii,
+                Some("cp500") => encoding = kobold_data_shim::Encoding::Cp500,
+                other => {
+                    eprintln!(
+                        "unsupported --encoding {:?} (admitted: ascii, cp500)",
+                        other.unwrap_or("")
+                    );
+                    return ExitCode::from(2);
+                }
+            },
             _ => {
                 eprintln!("unknown arg: {a}");
                 return ExitCode::from(2);
@@ -76,8 +89,8 @@ fn main() -> ExitCode {
     };
 
     let resolver = DirResolver(copydir);
-    let r = match kobold_data_shim::recon::reconcile(
-        &fixture, &copybook, &data, rlen, &gver, &resolver,
+    let r = match kobold_data_shim::recon::reconcile_encoded(
+        &fixture, &copybook, &data, rlen, &gver, &resolver, encoding,
     ) {
         Ok(r) => r,
         Err(e) => {
