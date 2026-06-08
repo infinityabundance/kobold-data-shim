@@ -2,7 +2,7 @@
 
 <img src="assets/kobold_data_shim.png" width="200">
 
-[![crates.io](https://img.shields.io/crates/v/kobold-data-shim.svg)](https://crates.io/crates/kobold-data-shim) [![docs.rs](https://img.shields.io/docsrs/kobold-data-shim)](https://docs.rs/kobold-data-shim) ![license](https://img.shields.io/badge/license-Apache--2.0-blue) ![kernel](https://img.shields.io/badge/kernel-gnucobol--rs_(oracle--proven)-orange) ![courts](https://img.shields.io/badge/KOBOLD_courts-15-brightgreen) ![fail](https://img.shields.io/badge/unsupported-fails_closed-success)
+[![crates.io](https://img.shields.io/crates/v/kobold-data-shim.svg)](https://crates.io/crates/kobold-data-shim) [![docs.rs](https://img.shields.io/docsrs/kobold-data-shim)](https://docs.rs/kobold-data-shim) ![license](https://img.shields.io/badge/license-Apache--2.0-blue) ![kernel](https://img.shields.io/badge/kernel-gnucobol--rs_(oracle--proven)-orange) ![courts](https://img.shields.io/badge/KOBOLD_courts-16-brightgreen) ![fail](https://img.shields.io/badge/unsupported-fails_closed-success)
 
 **A verifiable COBOL record-decoding shim for data-migration pipelines.** Give it a copybook and a
 raw record dump; it tells you — byte-exactly — *what that COBOL record actually meant*, by composing
@@ -28,6 +28,7 @@ guessed — the reconciliation signal that real migrations need.
 | `BANK.RECONCILE.1` | generated operator reconciliation **view** | new evidence (it is a view) · match ≠ correctness |
 | `DIFF.1` | structural diff vs a **declared** expected artifact | oracle authority · business truth · match ≠ correctness |
 | `LAYOUT.REDEFINES.2` | overlapping REDEFINES **byte views** + declared active view | which view is active (unless declared) · layout-valid ≠ business meaning |
+| `SENTINEL.PROFILE.1` | declared sentinel markers (LOW/HIGH/SPACES/zero-date…) as **evidence** | null · date · missing · business status · undeclared inference |
 | `PRIVACY.REDACTION.1` | declared redaction, hashes/provenance kept | anonymization · compliance · reversibility |
 | `CORPUS.2` | hostile fixtures fail closed (none silently clean) | production representativeness |
 | `PERF.1` | gated Rayon, byte-identical to scalar | production / parallel throughput |
@@ -224,6 +225,16 @@ counts, dirty/unsupported counts, redaction counts, and the **refused truth laye
 an aggregated SARIF of the *existing* findings. It **introduces no new evidence** (`introduces_new_evidence:
 false`) and a match proves equality to the **declared** totals, *not* posting, ledger, settlement,
 account-balance, or business truth.
+
+## Declared sentinel markers (`KOBOLD.SENTINEL.PROFILE.1`)
+
+Sentinel values (LOW-VALUES, HIGH-VALUES, SPACES, ZEROES, EBCDIC blanks, zero-dates, max-dates, custom
+markers) appear everywhere in legacy financial files and **decode cleanly** — and mean nothing without a
+declaration. `sentinel_scan` records which **declared** markers match a named field (by `raw_hex` or
+`decoded_value`) as **evidence only**; an undeclared sentinel-looking value is **never inferred**
+(`undeclared_inference:false`). Nullness, date meaning, missingness, business status, and account state all
+stay **`claimed:false`** (nullness needs DB2HOST.1; dates need DATE.PROFILE). +7 NEG.SENTINEL.* — *LOW-VALUES
+≠ null, HIGH-VALUES ≠ max-date, SPACES ≠ missing, a marker ≠ a business status.*
 
 ## Overlapping REDEFINES views (`KOBOLD.LAYOUT.REDEFINES.2`)
 

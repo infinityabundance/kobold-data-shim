@@ -19,6 +19,11 @@
   over the SAME bytes; `active_view` is `claimed:false` by default and admitted only by a declared
   discriminator (unknown -> false). Layout-valid byte views, never inferred business meaning. +5
   NEG.REDEFINES.*. tests/redefines.rs (4).
+- **KOBOLD.SENTINEL.PROFILE.1 — declared sentinel-marker evidence.** `sentinel_scan` records which DECLARED
+  markers (by `raw_hex` or `decoded_value`) match a named field, as evidence only; undeclared sentinel-
+  looking values are never inferred (`undeclared_inference:false`). nullness/date/missingness/business
+  status/account state stay `claimed:false` (nullness needs DB2HOST.1; dates need DATE.PROFILE). +7
+  NEG.SENTINEL.*. tests/sentinel.rs (3).
 
 ## [0.6.3]
 - **KOBOLD.DATA.6 — COMP-6 composed.** One unsigned COMP-6 field per family (ACCOUNT-SEQUENCE `9(8)`,
