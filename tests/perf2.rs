@@ -6,9 +6,11 @@ use gnucobol_rs::{
     build_field, cob_move, FieldAttr, Usage, COB_FLAG_HAVE_SIGN, COB_TYPE_NUMERIC_DISPLAY,
 };
 use kobold_data_shim::recon::reconcile_profile;
+use kobold_data_shim::{recon::reconcile_encoded, Encoding, NoCopy};
+#[cfg(feature = "rayon")]
 use kobold_data_shim::{
-    posting_manifest, recon::reconcile_encoded, redact_record, DefaultAction, Encoding, FieldRule,
-    NoCopy, PostingProfile, RedactionAction, RedactionPolicy,
+    posting_manifest, redact_record, DefaultAction, FieldRule, PostingProfile, RedactionAction,
+    RedactionPolicy,
 };
 
 const CB: &str = "       01 R.\n           05 SEQ-NO PIC 9(6).\n           05 NAME PIC X(6).\n           05 BAL PIC S9(7)V99 COMP-3.\n           05 BR PIC 9(4) COMP.\n           05 ST PIC X.\n               88 ACTIVE VALUE \"A\".\n";
