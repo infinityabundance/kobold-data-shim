@@ -1,3 +1,12 @@
+## Unreleased
+
+- **KOBOLD.PILOT.WORKFLOW.1 — end-to-end pilot workflow wiring.** An integration (`tests/pilot_workflow.rs`)
+  flows a declared synthetic/private-pilot-shaped extract through EXTRACT.PROFILE.1 → PRIVACY.REDACTION.1 →
+  BANK.1/2 + BANK.RECONCILE.1 → DIFF.1 → TOOLING.EXPORT.1 → PILOT-PACKET.1, proving the workflow plumbing +
+  evidence custody (account id tokenized before any artifact leaves the secure zone; no cleartext anywhere;
+  packet hash-binds the chain). Synthetic bytes only — not customer-data coverage / production readiness /
+  compliance / business acceptance. +6 NEG.PILOT_WORKFLOW.*. No API change (integration test + court entry).
+
 # Changelog
 
 ## 0.7.1

@@ -2,7 +2,7 @@
 
 <img src="assets/kobold_data_shim.png" width="200">
 
-[![crates.io](https://img.shields.io/crates/v/kobold-data-shim.svg)](https://crates.io/crates/kobold-data-shim) [![docs.rs](https://img.shields.io/docsrs/kobold-data-shim)](https://docs.rs/kobold-data-shim) ![license](https://img.shields.io/badge/license-Apache--2.0-blue) ![kernel](https://img.shields.io/badge/kernel-gnucobol--rs_(oracle--proven)-orange) ![courts](https://img.shields.io/badge/KOBOLD_courts-21-brightgreen) ![fail](https://img.shields.io/badge/unsupported-fails_closed-success)
+[![crates.io](https://img.shields.io/crates/v/kobold-data-shim.svg)](https://crates.io/crates/kobold-data-shim) [![docs.rs](https://img.shields.io/docsrs/kobold-data-shim)](https://docs.rs/kobold-data-shim) ![license](https://img.shields.io/badge/license-Apache--2.0-blue) ![kernel](https://img.shields.io/badge/kernel-gnucobol--rs_(oracle--proven)-orange) ![courts](https://img.shields.io/badge/KOBOLD_courts-22-brightgreen) ![fail](https://img.shields.io/badge/unsupported-fails_closed-success)
 
 **A verifiable COBOL record-decoding shim for data-migration pipelines.** Give it a copybook and a
 raw record dump; it tells you — byte-exactly — *what that COBOL record actually meant*, by composing
@@ -34,6 +34,7 @@ guessed — the reconciliation signal that real migrations need.
 | `TOOLING.EXPORT.1` | IDE/tooling evidence map (provenance·courts·witness·redaction) | not an LSP/IDE/parser · not a source of truth · no new evidence |
 | `NIST-STYLE-FIXTURE-FORMAT.1` | named **replayable** fixtures (expected verdict/findings/non-claims) | NIST conformance · language suite · certification · expected≠oracle |
 | `PILOT-PACKET.1` | hash-bound **pilot** evidence bundle + operator checklist | certification · compliance · production approval · customer acceptance |
+| `PILOT.WORKFLOW.1` | end-to-end pilot **wiring** over a synthetic extract | customer-data coverage · production readiness · compliance · business acceptance |
 | `PRIVACY.REDACTION.1` | declared redaction, hashes/provenance kept | anonymization · compliance · reversibility |
 | `CORPUS.2` | hostile fixtures fail closed (none silently clean) | production representativeness |
 | `PERF.1` | gated Rayon, byte-identical to scalar | production / parallel throughput |
@@ -236,6 +237,17 @@ counts, dirty/unsupported counts, redaction counts, and the **refused truth laye
 an aggregated SARIF of the *existing* findings. It **introduces no new evidence** (`introduces_new_evidence:
 false`) and a match proves equality to the **declared** totals, *not* posting, ledger, settlement,
 account-balance, or business truth.
+
+## End-to-end pilot workflow (`KOBOLD.PILOT.WORKFLOW.1`)
+
+A single integration (`tests/pilot_workflow.rs`) flows a **declared synthetic/private-pilot-shaped** banking
+extract through the whole chain — `EXTRACT.PROFILE.1` → `PRIVACY.REDACTION.1` → `BANK.1/2` +
+`BANK.RECONCILE.1` → `DIFF.1` → `TOOLING.EXPORT.1` → `PILOT-PACKET.1` — proving the **workflow plumbing and
+evidence custody**: the account id is tokenized before any artifact leaves the secure zone (**no cleartext**
+in the redaction, the field map, or the packet), the reconcile view is source-bound to the extract +
+redaction, the diff target is non-oracle, and the pilot packet hash-binds every produced artifact + the
+operator review-notes hash. The bytes are **synthetic** — it does **not** claim customer-data coverage,
+production readiness, compliance, or business acceptance. +6 NEG.PILOT_WORKFLOW.*.
 
 ## Pilot evidence packet (`KOBOLD.PILOT-PACKET.1`)
 
