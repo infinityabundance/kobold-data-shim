@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.1
+
+- **KOBOLD.PILOT-PACKET.1 — hash-bound pilot evidence packet.** `pilot_packet` bundles a pilot run's existing
+  court artifacts (EXTRACT.PROFILE.1, redaction policy, BANK.RECONCILE.1, DIFF.1, TOOLING.EXPORT.1, SCALE
+  receipt, DSSE verification) each pinned by sha256, plus the copybook sha, an operator review checklist, and
+  a review-notes HASH (notes never embedded). `derived_view:true`, `creates_new_truth:false`; a changed
+  artifact changes the packet; missing required artifacts are flagged. Pilot evidence only — not
+  certification/compliance/production-approval/customer-acceptance. +9 NEG.PILOT.*. tests/pilot.rs (3).
+
 ## 0.7.0
 
 - **NIST-STYLE-FIXTURE-FORMAT.1 — named replayable fixture format.** `kobold-fixture-v1` declares input

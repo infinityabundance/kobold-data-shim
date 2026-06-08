@@ -46,6 +46,7 @@ use gnucobol_rs::{
     FieldAttr, Usage, COB_FLAG_NO_SIGN_NIBBLE, COB_TYPE_NUMERIC_BINARY, COB_TYPE_NUMERIC_DISPLAY,
     COB_TYPE_NUMERIC_PACKED,
 };
+pub use pilot::{pilot_packet, PilotArtifact, PilotInputs, PilotPacket};
 pub use posting::{posting_manifest, PostingManifest, PostingProfile};
 pub use privacy::{
     redact_record, DefaultAction, FieldRule, RedactionAction, RedactionPolicy, RedactionResult,
@@ -99,6 +100,7 @@ pub mod extract;
 pub mod file;
 pub mod fixture;
 pub mod operator;
+pub mod pilot;
 pub mod posting;
 pub mod privacy;
 pub mod recon;
