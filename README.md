@@ -140,6 +140,15 @@ proven; **posting, ledger, and business truth are explicitly `claimed: false`** 
 profiles. *A balanced file is not a correct file; a trailer match is not ledger acceptance.* The full
 banking refusal set is in the registry (`NEG.BANKING.*`).
 
+## Evidence-preserving redaction (`KOBOLD.PRIVACY.REDACTION.1`)
+
+Before real files enter the pipeline, privacy is a **court**, not a footnote. `redact_record` applies a
+**declared** field policy: a value is **withheld** (`redact_value_keep_hash` / `…_and_raw_keep_hashes`) or
+**tokenized** (`tokenize_deterministic`, scope-stable, never reversible), while `value_sha256`,
+`raw_sha256`, offset/size, copybook provenance, and court identity stay visible so the evidence remains
+auditable. An **unlisted field fails closed** under a `deny_unlisted` policy, and `public_output_claim` is
+always `false`. *It claims no anonymization, regulatory compliance, reversibility, or safe public release.*
+
 ## Extraction provenance + copybook freshness (`KOBOLD.EXTRACT.PROFILE.1`)
 
 Every real migration depends on *how the bytes were obtained*. `extract_manifest` records the **declared**

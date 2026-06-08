@@ -40,6 +40,9 @@ use gnucobol_rs::{
     COB_TYPE_NUMERIC_PACKED,
 };
 pub use posting::{posting_manifest, PostingManifest, PostingProfile};
+pub use privacy::{
+    redact_record, DefaultAction, FieldRule, RedactionAction, RedactionPolicy, RedactionResult,
+};
 pub use recon2::{reconcile_transform, ReconTransformResult, Transform, TransformOp};
 
 /// The record's declared character encoding (`KOBOLD.DATA.3`). **Never auto-detected** — the caller
@@ -82,6 +85,7 @@ pub mod extract;
 pub mod file;
 pub mod operator;
 pub mod posting;
+pub mod privacy;
 pub mod recon;
 pub mod recon2;
 pub mod sha256;

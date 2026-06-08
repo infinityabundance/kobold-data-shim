@@ -64,6 +64,12 @@
   bound to the data + copybook sha256. **Refuses extraction truth**; **copybook freshness is `claimed:false`**
   (hash + provenance evidence only; risk: a stale copybook decodes plausibly wrong). +6 NEG.EXTRACT.* /
   NEG.COPYBOOK.STALE / NEG.CODESET.*. tests/extract.rs (2).
+- **KOBOLD.PRIVACY.REDACTION.1 — declared evidence-preserving redaction.** `redact_record` withholds
+  (`redact_value_keep_hash` / `…_and_raw_keep_hashes`) or tokenizes (`tokenize_deterministic`, scope-stable,
+  never reversible) declared field values while preserving `value_sha256`/`raw_sha256`, offset/size,
+  copybook provenance, and court identity. Unlisted fields **fail closed** under `deny_unlisted`;
+  `public_output_claim:false`. +7 NEG.PRIVACY.*/NEG.REDACTION.*. tests/privacy.rs (3). NOT anonymization /
+  regulatory compliance / reversibility / safe public release.
 
 ## [0.6.2]
 - **KOBOLD.DATA.5 — cp500 numeric DISPLAY composed.** EBCDIC zoned-decimal numeric DISPLAY fields now
