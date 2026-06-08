@@ -140,6 +140,16 @@ proven; **posting, ledger, and business truth are explicitly `claimed: false`** 
 profiles. *A balanced file is not a correct file; a trailer match is not ledger acceptance.* The full
 banking refusal set is in the registry (`NEG.BANKING.*`).
 
+## Extraction provenance + copybook freshness (`KOBOLD.EXTRACT.PROFILE.1`)
+
+Every real migration depends on *how the bytes were obtained*. `extract_manifest` records the **declared**
+provenance — file organization, extract method, record-length source, copybook source, any code-set
+conversion done **before** KOBOLD, source-system cutoff, operator assumptions — bound to the data +
+copybook sha256. It **refuses extraction truth** and holds **copybook freshness as a permanent
+uncertainty** (`copybook_freshness: {claimed:false, risk: "a stale copybook may decode bytes plausibly
+wrong"}`). *KOBOLD proves decoded extracted bytes — not that the extraction or the copybook is production
+truth.*
+
 ## Posting-unit custody (`KOBOLD.POSTING.1`)
 
 A **declared** posting-unit manifest binds the banking spine into one custody record — *which exact

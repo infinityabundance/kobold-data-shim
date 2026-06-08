@@ -58,6 +58,12 @@
   `sequence_contiguous` is declared), and duplicate transaction ids. `posting_truth`/`ledger_truth`/
   `business_truth` claimed:false. +5 NEG.POSTING.*. tests/posting.rs (6). NOT ledger acceptance /
   settlement finality / account balance / business truth.
+- **KOBOLD.EXTRACT.PROFILE.1 (CUSTODY.1) — declared extraction provenance + copybook freshness.**
+  `extract_manifest` records the declared provenance (file organization, extract method, record-length
+  source, copybook source, pre-KOBOLD code-set conversion, source-system cutoff, operator assumptions)
+  bound to the data + copybook sha256. **Refuses extraction truth**; **copybook freshness is `claimed:false`**
+  (hash + provenance evidence only; risk: a stale copybook decodes plausibly wrong). +6 NEG.EXTRACT.* /
+  NEG.COPYBOOK.STALE / NEG.CODESET.*. tests/extract.rs (2).
 
 ## [0.6.2]
 - **KOBOLD.DATA.5 — cp500 numeric DISPLAY composed.** EBCDIC zoned-decimal numeric DISPLAY fields now
