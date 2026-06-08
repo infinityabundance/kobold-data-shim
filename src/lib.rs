@@ -29,6 +29,7 @@ pub use banking::{
     reconcile_banking, BankingResult, BankingSummary, ControlSpec, Variant, VariantSpec,
 };
 pub use db2host::{db2host_evaluate, Db2HostResult, IndicatorManifest, IndicatorPair, NullState};
+pub use diff::{diff_artifacts, DiffInput, DiffReport, DiffTarget, OracleStatus};
 pub use extract::{
     extract_manifest, ExtractManifest, ExtractMethod, ExtractProfile, FileOrganization,
     RecordLengthSource,
@@ -85,6 +86,7 @@ use std::collections::HashMap;
 pub mod bank_reconcile;
 pub mod banking;
 pub mod db2host;
+pub mod diff;
 pub mod extract;
 pub mod file;
 pub mod operator;

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.4
+
+- **KOBOLD.DIFF.1 — structural diff against a declared expected artifact.** `diff_artifacts(actual,
+  expected, target)` compares KOBOLD output to a DECLARED target over selected dimensions (field values,
+  audit hashes, finding-id set, control totals): exact match passes; field/missing/extra/finding-set/
+  control-total/hash drift each emit a named SARIF finding (`KOBOLD-DIFF-*`). The target declares an
+  `oracle_status` (default `not_oracle`); a match proves equality to the target, NOT oracle authority,
+  business truth, ledger acceptance, settlement finality, or customer approval (a non-oracle match emits
+  `KOBOLD-DIFF-TARGET-NOT-ORACLE`). Deterministic. +6 NEG.DIFF.*. tests/diff.rs (6).
+
 ## [0.6.3]
 - **KOBOLD.DATA.6 — COMP-6 composed.** One unsigned COMP-6 field per family (ACCOUNT-SEQUENCE `9(8)`,
   PAYROLL-BATCH-NO `9(6)`, POLICY-CODE `9(10)`; +ACCT-SEQ-C6 in the cp500 corpus) decodes via
