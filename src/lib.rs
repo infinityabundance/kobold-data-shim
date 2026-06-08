@@ -28,6 +28,7 @@ pub use bank_reconcile::{bank_reconcile_report, BankReconcileInputs, BankReconci
 pub use banking::{
     reconcile_banking, BankingResult, BankingSummary, ControlSpec, Variant, VariantSpec,
 };
+pub use currency::{currency_validate, CurrencyFieldProfile, CurrencyManifest, CurrencyProfile};
 pub use date_profile::{date_validate, DateFieldProfile, DateFormat, DateManifest, DateProfile};
 pub use db2host::{db2host_evaluate, Db2HostResult, IndicatorManifest, IndicatorPair, NullState};
 pub use diff::{diff_artifacts, DiffInput, DiffReport, DiffTarget, OracleStatus};
@@ -88,6 +89,7 @@ use std::collections::HashMap;
 
 pub mod bank_reconcile;
 pub mod banking;
+pub mod currency;
 pub mod date_profile;
 pub mod db2host;
 pub mod diff;

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.5
+
+- **KOBOLD.CURRENCY.PROFILE.1 — declared currency/amount-profile evidence.** `currency_validate` checks a
+  field declared `role=amount` against an explicit `declared_scale` (observed implied scale vs declared) with
+  an optional currency-code field preserved as EVIDENCE (never legal tender). A non-amount role is not
+  admitted as money; the sign is not polarity (BANK.2 owns DR/CR). Money/FX/rounding/legal-tender/business
+  meaning stay `claimed:false`. +8 NEG.CURRENCY.*. tests/currency.rs (3). Closes the value-profile trio
+  (SENTINEL -> DATE -> CURRENCY).
+
 ## 0.6.4
 
 - **KOBOLD.DIFF.1 — structural diff against a declared expected artifact.** `diff_artifacts(actual,
