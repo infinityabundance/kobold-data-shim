@@ -24,6 +24,14 @@
   with truth LAYERS — byte/record truth proven, **posting/ledger/business truth explicitly unclaimed**.
   Doctrine: a balanced file is not a correct file; a trailer match is not ledger acceptance. tests/
   banking.rs (3) + recon/banking H/D/T corpus.
+- **KOBOLD.BANK.2 / ACCOUNTING.PROFILE.1 — declared accounting profile.** Generalises BANK.1's hard-coded
+  DR/CR into a reusable `kobold-accounting-profile-v1`: declared numeric **roles** (amount/rate/identifier/
+  code/sequence/count) so **only `amount` fields are summed** (a rate or account-id is never money), and a
+  declared **polarity profile** (`amount_field` + `source_field` + debit/credit value tables). Posting side
+  is taken ONLY from the declared source — **a negative amount with declared `D` is still a debit** (sign
+  is not polarity), CR/DB presentation and field-name heuristics are never used, and an unknown polarity
+  value fails closed. The casefile embeds the `accounting_profile` (with `numeric_sign_policy:not_polarity`).
+  tests/banking.rs now 5 (incl. negative-D-still-debit, rate-not-summed, unknown-fails-closed).
 
 ## [0.6.2]
 - **KOBOLD.DATA.5 — cp500 numeric DISPLAY composed.** EBCDIC zoned-decimal numeric DISPLAY fields now

@@ -128,6 +128,12 @@ banking data being over-interpreted*:
   totals — a `KOBOLD-BANK-CONTROL-MISMATCH` finding (SARIF-shaped) on any discrepancy;
 - debit/credit polarity comes only from the **declared** DR/CR field, **never** a numeric sign.
 
+It composes a **declared accounting profile** (`KOBOLD.BANK.2` / `kobold-accounting-profile-v1`): each
+field is given a numeric **role** (amount / rate / identifier / code / sequence / count) and **only
+`amount` fields are summed** — a rate or an account-id is numeric but never money. Polarity comes only
+from a declared source field + value tables; a **negative amount with a declared `D` is still a debit**
+(sign is not polarity), and an unknown polarity value fails closed.
+
 It emits a `kobold-banking-forensic-casefile-v1` with truth **layers**: byte truth and record truth are
 proven; **posting, ledger, and business truth are explicitly `claimed: false`** and require declared
 profiles. *A balanced file is not a correct file; a trailer match is not ledger acceptance.* The full

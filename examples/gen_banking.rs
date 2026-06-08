@@ -90,6 +90,7 @@ fn build(tamper: bool) -> Vec<u8> {
         d.extend(disp("9(10)", &format!("{:010}", 1000000 + i)));
         d.push(ind.as_bytes()[0]);
         d.extend(comp3("S9(7)V99", amt));
+        d.extend(comp3("S9(1)V9(4)", "1.0500")); // RATE -- numeric but NOT money (declared role: rate)
         out.extend(pad(d));
     }
     // trailer: 'T' TRL-COUNT 9(6) TRL-DEBIT S9(9)V99 COMP-3 TRL-CREDIT S9(9)V99 COMP-3

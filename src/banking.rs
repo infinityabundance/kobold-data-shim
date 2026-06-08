@@ -28,18 +28,69 @@ pub struct VariantSpec<'a> {
     pub variants: &'a [Variant<'a>],
 }
 
-/// The declared control-total profile: which fields carry the detail amount + declared polarity, and
-/// which trailer fields carry the declared count/debit/credit totals.
+/// The declared numeric ROLE of a field (`ACCOUNTING.PROFILE.1`). Only `Amount` fields are summed into
+/// debit/credit totals; identifiers, codes, rates, sequences, and counts are numeric but **never money**.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum NumericRole {
+    Amount,
+    Rate,
+    Identifier,
+    Code,
+    Sequence,
+    Count,
+    Unknown,
+}
+
+impl NumericRole {
+    fn as_str(self) -> &'static str {
+        match self {
+            NumericRole::Amount => "amount",
+            NumericRole::Rate => "rate",
+            NumericRole::Identifier => "identifier",
+            NumericRole::Code => "code",
+            NumericRole::Sequence => "sequence",
+            NumericRole::Count => "count",
+            NumericRole::Unknown => "unknown",
+        }
+    }
+}
+
+/// A declared debit/credit polarity profile (`ACCOUNTING.PROFILE.1` / `KOBOLD.BANK.2`). Posting side is
+/// derived **only** from `source_field`'s value against the declared value tables — never from a numeric
+/// sign, a `CR`/`DB` presentation marker, a transaction code, or an account type. Unknown → fail closed.
+pub struct PolarityProfile<'a> {
+    pub amount_field: &'a str,
+    pub source_field: &'a str,
+    pub debit_values: &'a [&'a str],
+    pub credit_values: &'a [&'a str],
+}
+
+/// The declared accounting profile: numeric roles per field + the polarity profile. Without it, **no
+/// accounting totals are claimed** (numeric-role and polarity are refused, not inferred).
+pub struct AccountingProfile<'a> {
+    pub numeric_roles: &'a [(&'a str, NumericRole)],
+    pub polarity: PolarityProfile<'a>,
+}
+
+impl AccountingProfile<'_> {
+    fn role(&self, field: &str) -> NumericRole {
+        self.numeric_roles
+            .iter()
+            .find(|(f, _)| *f == field)
+            .map(|(_, r)| *r)
+            .unwrap_or(NumericRole::Unknown)
+    }
+}
+
+/// The declared control profile: variant names, trailer-total fields, and the accounting profile.
 pub struct ControlSpec<'a> {
     pub detail_variant: &'a str,
     pub trailer_variant: &'a str,
-    pub amount_field: &'a str,
-    pub drcr_field: &'a str,
-    pub debit_indicator: &'a str,
-    pub credit_indicator: &'a str,
     pub trailer_count_field: &'a str,
     pub trailer_debit_field: &'a str,
     pub trailer_credit_field: &'a str,
+    pub accounting: AccountingProfile<'a>,
 }
 
 /// The banking reconciliation outcome.
@@ -100,6 +151,20 @@ pub fn reconcile_banking(
         return Err(ShimError::Layout("record_len must be > 0".into()));
     }
     let mut findings: Vec<(String, String)> = Vec::new();
+    // Profile sanity: the field being summed as money MUST be declared role=Amount (never a rate/id/code).
+    if control
+        .accounting
+        .role(control.accounting.polarity.amount_field)
+        != NumericRole::Amount
+    {
+        findings.push((
+            "KOBOLD-BANK-PROFILE-INCONSISTENT".into(),
+            format!(
+                "polarity.amount_field {:?} is not declared numeric role=amount (refusing to sum)",
+                control.accounting.polarity.amount_field
+            ),
+        ));
+    }
     let (mut obs_count, mut obs_debit, mut obs_credit) = (0u64, 0i64, 0i64);
     let mut variant_counts: Vec<(String, u64)> = Vec::new();
     let (mut decl_count, mut decl_debit, mut decl_credit): (Option<u64>, Option<i64>, Option<i64>) =
@@ -138,18 +203,22 @@ pub fn reconcile_banking(
         }
         if v.name == control.detail_variant {
             obs_count += 1;
-            let amt = field(v.copybook, rec, control.amount_field).and_then(|s| to_cents(&s));
-            let ind = field(v.copybook, rec, control.drcr_field);
-            match (amt, ind.as_deref()) {
-                (Some(c), Some(i)) if i.trim() == control.debit_indicator => obs_debit += c,
-                (Some(c), Some(i)) if i.trim() == control.credit_indicator => obs_credit += c,
+            let acct = &control.accounting;
+            // ONLY the declared Amount field is summed; a numeric rate/identifier/code is never money.
+            let amt = field(v.copybook, rec, acct.polarity.amount_field).and_then(|s| to_cents(&s));
+            // Polarity comes ONLY from the declared source field + value tables -- never the sign.
+            let ind = field(v.copybook, rec, acct.polarity.source_field);
+            let ind_t = ind.as_deref().map(str::trim);
+            match (amt, ind_t) {
+                (Some(c), Some(i)) if acct.polarity.debit_values.contains(&i) => obs_debit += c,
+                (Some(c), Some(i)) if acct.polarity.credit_values.contains(&i) => obs_credit += c,
                 (Some(_), Some(other)) => findings.push((
                     "KOBOLD-BANK-UNKNOWN-POLARITY".into(),
-                    format!("record {idx}: DR/CR indicator {other:?} not in declared profile (fail closed)"),
+                    format!("record {idx}: polarity value {other:?} not in declared profile (fail closed)"),
                 )),
                 _ => findings.push((
                     "KOBOLD-BANK-DIRTY-DETAIL".into(),
-                    format!("record {idx}: amount/indicator not cleanly decodable"),
+                    format!("record {idx}: amount/polarity not cleanly decodable"),
                 )),
             }
         } else if v.name == control.trailer_variant {
@@ -224,17 +293,45 @@ pub fn reconcile_banking(
         })
         .collect::<Vec<_>>()
         .join(",");
+    // The DECLARED accounting profile (ACCOUNTING.PROFILE.1): which fields are amounts (summable) vs
+    // identifiers/rates/codes (numeric but never money), and the polarity source -- with the sign and
+    // presentation policies stated as explicit refusals.
+    let acct = &control.accounting;
+    let roles = acct
+        .numeric_roles
+        .iter()
+        .map(|(f, r)| format!("{}:{}", jstr(f), jstr(r.as_str())))
+        .collect::<Vec<_>>()
+        .join(",");
+    let vals = |vs: &[&str]| vs.iter().map(|v| jstr(v)).collect::<Vec<_>>().join(",");
+    let acct_json = format!(
+        concat!(
+            "{{\"schema\":\"kobold-accounting-profile-v1\",\"numeric_roles\":{{{}}},",
+            "\"polarity\":{{\"amount_field\":{},\"source_field\":{},\"debit_values\":[{}],",
+            "\"credit_values\":[{}],\"unknown_value_policy\":\"fail_closed\",",
+            "\"numeric_sign_policy\":\"not_polarity\",\"presentation_marker_policy\":\"not_polarity\",",
+            "\"field_name_heuristics\":\"not_used\"}}}}"
+        ),
+        roles,
+        jstr(acct.polarity.amount_field),
+        jstr(acct.polarity.source_field),
+        vals(acct.polarity.debit_values),
+        vals(acct.polarity.credit_values),
+    );
     let casefile_json = format!(
         concat!(
-            "{{\"schema\":\"kobold-banking-forensic-casefile-v1\",\"court\":\"KOBOLD.BANK.1\",",
+            "{{\"schema\":\"kobold-banking-forensic-casefile-v1\",\"court\":\"KOBOLD.BANK.2 (ACCOUNTING.PROFILE.1)\",",
             "\"input_sha256\":{},\"record_len\":{},\"record_count\":{},",
             "\"byte_truth\":{{\"proven\":true,\"court\":\"KOBOLD.FILE.1 + sealed gnucobol-rs courts\"}},",
             "\"record_truth\":{{\"proven\":true,\"variant_counts\":{{{}}}}},",
+            "\"accounting_profile\":{},",
             "\"control_totals\":{{\"declared\":{{\"count\":{},\"debit\":{},\"credit\":{}}},",
             "\"observed\":{{\"count\":{},\"debit\":{},\"credit\":{}}},\"balanced\":{}}},",
             "\"posting_truth\":{{\"claimed\":false,\"requires\":\"declared posting/balancing profile\"}},",
             "\"ledger_truth\":{{\"claimed\":false}},\"business_truth\":{{\"claimed\":false}},",
             "\"negative_capabilities\":[\"NEG.BANKING.SIGN_IS_NOT_POLARITY\",",
+            "\"NEG.BANKING.CR_DB_IS_NOT_POSTING_SIDE\",\"NEG.NUMERIC.ROLE\",",
+            "\"NEG.IDENTIFIER.NUMERIC_COERCION\",\"NEG.CURRENCY.SCALE\",\"NEG.REVERSAL.INFERENCE\",",
             "\"NEG.BANKING.BALANCED_FILE_IS_NOT_CORRECT_FILE\",",
             "\"NEG.BANKING.TRAILER_MATCH_IS_NOT_LEDGER_ACCEPTANCE\",\"NEG.BANKING.POSTING_TRUTH\"],",
             "\"findings\":[{}],\"verdict\":{}}}\n"
@@ -243,6 +340,7 @@ pub fn reconcile_banking(
         record_len,
         data.len() / record_len,
         vc,
+        acct_json,
         decl_count.map(|c| c.to_string()).unwrap_or("null".into()),
         decl_debit.map(money).map(|s| jstr(&s)).unwrap_or("null".into()),
         decl_credit.map(money).map(|s| jstr(&s)).unwrap_or("null".into()),
