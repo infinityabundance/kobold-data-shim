@@ -24,6 +24,11 @@
   looking values are never inferred (`undeclared_inference:false`). nullness/date/missingness/business
   status/account state stay `claimed:false` (nullness needs DB2HOST.1; dates need DATE.PROFILE). +7
   NEG.SENTINEL.*. tests/sentinel.rs (3).
+- **KOBOLD.DATE.PROFILE.1 — declared date-format evidence.** `date_validate` checks a named field against an
+  explicit format (`YYYYMMDD`/`YYDDD`) on its RAW digit string (leading zeros preserved); sentinels are
+  delegated to SENTINEL.PROFILE.1; the strongest claim is `format_valid_only`. PIC shape alone gets no date
+  claim; business/settlement/maturity/Y2K/currentness/arithmetic meaning stay `claimed:false`. +8
+  NEG.DATE.*. tests/date_profile.rs (3).
 
 ## [0.6.3]
 - **KOBOLD.DATA.6 — COMP-6 composed.** One unsigned COMP-6 field per family (ACCOUNT-SEQUENCE `9(8)`,

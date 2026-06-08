@@ -2,7 +2,7 @@
 
 <img src="assets/kobold_data_shim.png" width="200">
 
-[![crates.io](https://img.shields.io/crates/v/kobold-data-shim.svg)](https://crates.io/crates/kobold-data-shim) [![docs.rs](https://img.shields.io/docsrs/kobold-data-shim)](https://docs.rs/kobold-data-shim) ![license](https://img.shields.io/badge/license-Apache--2.0-blue) ![kernel](https://img.shields.io/badge/kernel-gnucobol--rs_(oracle--proven)-orange) ![courts](https://img.shields.io/badge/KOBOLD_courts-16-brightgreen) ![fail](https://img.shields.io/badge/unsupported-fails_closed-success)
+[![crates.io](https://img.shields.io/crates/v/kobold-data-shim.svg)](https://crates.io/crates/kobold-data-shim) [![docs.rs](https://img.shields.io/docsrs/kobold-data-shim)](https://docs.rs/kobold-data-shim) ![license](https://img.shields.io/badge/license-Apache--2.0-blue) ![kernel](https://img.shields.io/badge/kernel-gnucobol--rs_(oracle--proven)-orange) ![courts](https://img.shields.io/badge/KOBOLD_courts-17-brightgreen) ![fail](https://img.shields.io/badge/unsupported-fails_closed-success)
 
 **A verifiable COBOL record-decoding shim for data-migration pipelines.** Give it a copybook and a
 raw record dump; it tells you — byte-exactly — *what that COBOL record actually meant*, by composing
@@ -29,6 +29,7 @@ guessed — the reconciliation signal that real migrations need.
 | `DIFF.1` | structural diff vs a **declared** expected artifact | oracle authority · business truth · match ≠ correctness |
 | `LAYOUT.REDEFINES.2` | overlapping REDEFINES **byte views** + declared active view | which view is active (unless declared) · layout-valid ≠ business meaning |
 | `SENTINEL.PROFILE.1` | declared sentinel markers (LOW/HIGH/SPACES/zero-date…) as **evidence** | null · date · missing · business status · undeclared inference |
+| `DATE.PROFILE.1` | declared date format (YYYYMMDD/YYDDD) validation | PIC≠date · zero/high≠null/max · Y2K window · date arithmetic |
 | `PRIVACY.REDACTION.1` | declared redaction, hashes/provenance kept | anonymization · compliance · reversibility |
 | `CORPUS.2` | hostile fixtures fail closed (none silently clean) | production representativeness |
 | `PERF.1` | gated Rayon, byte-identical to scalar | production / parallel throughput |
@@ -225,6 +226,16 @@ counts, dirty/unsupported counts, redaction counts, and the **refused truth laye
 an aggregated SARIF of the *existing* findings. It **introduces no new evidence** (`introduces_new_evidence:
 false`) and a match proves equality to the **declared** totals, *not* posting, ledger, settlement,
 account-balance, or business truth.
+
+## Declared date formats (`KOBOLD.DATE.PROFILE.1`)
+
+A `PIC 9(8)` is not a date — it's eight digits. `date_validate` checks a named field against an **explicit
+declared format** (`YYYYMMDD` / `YYDDD`) on its **raw digit string** (leading zeros preserved), delegating
+sentinel handling to `SENTINEL.PROFILE.1` (a declared sentinel is not validated as a date). The strongest
+claim is `format_valid_only`; `business_calendar` / `settlement_date` / `maturity_date` / `y2k_window` /
+`currentness` / `date_arithmetic` all stay **`claimed:false`**. Findings name invalid format / invalid
+calendar date / undeclared sentinel. +8 NEG.DATE.* — *PIC shape ≠ a date; 00000000 ≠ null; 99999999 ≠ a
+max-date; a 2-digit year is not windowed.*
 
 ## Declared sentinel markers (`KOBOLD.SENTINEL.PROFILE.1`)
 
