@@ -12,6 +12,18 @@
 
 use crate::sha256::sha256_hex;
 use crate::{CopyResolver, ShimError};
+use std::time::Instant;
+
+/// Per-stage wall-clock for one reconcile (`KOBOLD.PERF.2` profiling), in nanoseconds: stage 1
+/// parse/prepare (copybook expand + layout), stage 2 per-record evidence (decode + render), stage 3
+/// ordered aggregation (JSONL assembly + audit). Timing never alters the emitted bytes.
+#[derive(Debug, Clone, Copy, Default)]
+#[non_exhaustive]
+pub struct StageProfile {
+    pub parse_ns: u128,
+    pub record_ns: u128,
+    pub aggregate_ns: u128,
+}
 
 /// Crate version, for the audit receipt.
 pub const SHIM_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -89,6 +101,31 @@ pub fn reconcile_encoded(
         encoding,
         false,
     )
+    .map(|(r, _)| r)
+}
+
+/// `reconcile_encoded`, also returning the per-stage [`StageProfile`] (`KOBOLD.PERF.2` profiling). Scalar;
+/// the timing never alters the emitted bytes (the `ReconResult` is identical to `reconcile_encoded`).
+#[allow(clippy::too_many_arguments)]
+pub fn reconcile_profile(
+    fixture: &str,
+    copybook: &str,
+    data: &[u8],
+    record_len: usize,
+    gnucobol_rs_version: &str,
+    resolver: &impl CopyResolver,
+    encoding: crate::Encoding,
+) -> Result<(ReconResult, StageProfile), ShimError> {
+    reconcile_impl(
+        fixture,
+        copybook,
+        data,
+        record_len,
+        gnucobol_rs_version,
+        resolver,
+        encoding,
+        false,
+    )
 }
 
 /// `reconcile_encoded` with optional **record-level Rayon** parallelism (`KOBOLD.PERF.1`, `rayon`
@@ -115,6 +152,7 @@ pub fn reconcile_encoded_parallel(
         encoding,
         true,
     )
+    .map(|(r, _)| r)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -127,10 +165,11 @@ fn reconcile_impl(
     resolver: &impl CopyResolver,
     encoding: crate::Encoding,
     parallel: bool,
-) -> Result<ReconResult, ShimError> {
+) -> Result<(ReconResult, StageProfile), ShimError> {
     if record_len == 0 {
         return Err(ShimError::Layout("record_len must be > 0".into()));
     }
+    let t0 = Instant::now();
     // Refuse silent JSON key collisions before producing any output (KOBOLD.OPERATOR.1).
     crate::operator::check_copybook_collisions(copybook, resolver)?;
     let enc_note = match encoding {
@@ -181,9 +220,12 @@ fn reconcile_impl(
         condition_count = crate::eval_conditions(&prog, first, encoding).len();
     }
 
+    let t_parsed = Instant::now(); // stage 1 done: parse/prepare + layout
+
     // Per-record JSON objects, in record ORDER. Scalar by default; record-level Rayon under the `rayon`
     // feature (`KOBOLD.PERF.1`) — order-preserving `collect`, so the assembled JSONL/audit is byte-identical.
     let objects = build_objects(&prog, &chunks, record_len, encoding, parallel);
+    let t_records = Instant::now(); // stage 2 done: per-record evidence
     let mut jsonl = String::new();
     for (obj, _, _) in &objects {
         jsonl.push_str(obj);
@@ -241,13 +283,22 @@ fn reconcile_impl(
         jstr(crate::operator::STALE_COPYBOOK_RISK),
     );
 
-    Ok(ReconResult {
-        jsonl,
-        audit_json,
-        unsupported_json,
-        record_count,
-        unsupported_count,
-    })
+    let t_done = Instant::now(); // stage 3 done: ordered aggregation + audit
+    let profile = StageProfile {
+        parse_ns: (t_parsed - t0).as_nanos(),
+        record_ns: (t_records - t_parsed).as_nanos(),
+        aggregate_ns: (t_done - t_records).as_nanos(),
+    };
+    Ok((
+        ReconResult {
+            jsonl,
+            audit_json,
+            unsupported_json,
+            record_count,
+            unsupported_count,
+        },
+        profile,
+    ))
 }
 
 /// Build one record's JSON object + its `(unsupported_count, unsupported_names)` — the per-record work,

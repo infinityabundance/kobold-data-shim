@@ -9,6 +9,11 @@
   `oracle_status` (default `not_oracle`); a match proves equality to the target, NOT oracle authority,
   business truth, ledger acceptance, settlement finality, or customer approval (a non-oracle match emits
   `KOBOLD-DIFF-TARGET-NOT-ORACLE`). Deterministic. +6 NEG.DIFF.*. tests/diff.rs (6).
+- **KOBOLD.PERF.2 — deterministic multithreaded pipeline + per-stage profiling.** `reconcile_profile`
+  returns a `StageProfile` (parse / per-record / aggregate ns) without changing the emitted bytes; it
+  identifies the per-record stage as the bottleneck (the part PERF.1's Rayon already parallelizes
+  byte-identically), with aggregation kept serial/ordered. Full custody workload (reconcile + POSTING.1 +
+  PRIVACY.REDACTION.1) proven byte-identical scalar vs Rayon. +6 NEG.PERF.*. tests/perf2.rs.
 
 ## [0.6.3]
 - **KOBOLD.DATA.6 — COMP-6 composed.** One unsigned COMP-6 field per family (ACCOUNT-SEQUENCE `9(8)`,

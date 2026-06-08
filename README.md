@@ -2,7 +2,7 @@
 
 <img src="assets/kobold_data_shim.png" width="200">
 
-[![crates.io](https://img.shields.io/crates/v/kobold-data-shim.svg)](https://crates.io/crates/kobold-data-shim) [![docs.rs](https://img.shields.io/docsrs/kobold-data-shim)](https://docs.rs/kobold-data-shim) ![license](https://img.shields.io/badge/license-Apache--2.0-blue) ![kernel](https://img.shields.io/badge/kernel-gnucobol--rs_(oracle--proven)-orange) ![courts](https://img.shields.io/badge/KOBOLD_courts-13-brightgreen) ![fail](https://img.shields.io/badge/unsupported-fails_closed-success)
+[![crates.io](https://img.shields.io/crates/v/kobold-data-shim.svg)](https://crates.io/crates/kobold-data-shim) [![docs.rs](https://img.shields.io/docsrs/kobold-data-shim)](https://docs.rs/kobold-data-shim) ![license](https://img.shields.io/badge/license-Apache--2.0-blue) ![kernel](https://img.shields.io/badge/kernel-gnucobol--rs_(oracle--proven)-orange) ![courts](https://img.shields.io/badge/KOBOLD_courts-14-brightgreen) ![fail](https://img.shields.io/badge/unsupported-fails_closed-success)
 
 **A verifiable COBOL record-decoding shim for data-migration pipelines.** Give it a copybook and a
 raw record dump; it tells you — byte-exactly — *what that COBOL record actually meant*, by composing
@@ -30,6 +30,7 @@ guessed — the reconciliation signal that real migrations need.
 | `PRIVACY.REDACTION.1` | declared redaction, hashes/provenance kept | anonymization · compliance · reversibility |
 | `CORPUS.2` | hostile fixtures fail closed (none silently clean) | production representativeness |
 | `PERF.1` | gated Rayon, byte-identical to scalar | production / parallel throughput |
+| `PERF.2` | per-stage profiling + deterministic multithreaded pipeline | parallel custody/aggregation · thread schedule as evidence |
 | `OPERATOR.1` | explain · totals · dirty-mode (accountable fields) | silent coercion of dirty data |
 
 ```text
@@ -250,6 +251,16 @@ manifest in [`recon/corpus2-manifest.json`](recon/corpus2-manifest.json)): short
 packed nibbles, signed COMP-6, trailer mismatch, unknown record type, unknown DR/CR polarity, DB2 null /
 truncation / wrong-usage indicators, and undeclared transform targets. Synthetic only — *not* production
 representativeness or business correctness.
+
+## Pipeline profiling + deterministic threads (`KOBOLD.PERF.2`)
+
+`reconcile_profile` exposes the pipeline's **three stages** — (1) parse/prepare once, (2) parallel
+record-local evidence, (3) ordered aggregation — as a `StageProfile` (parse/per-record/aggregate ns)
+**without changing the emitted bytes**. Profiling shows the **per-record** stage dominates (~75% here, the
+part PERF.1's Rayon already parallelizes byte-identically); aggregation (~25%) is kept **serial and
+ordered**. The custody/order-sensitive work — the POSTING.1 hash chain, JSONL/finding order, totals — is
+never parallelized for speed: it stays byte-identical to scalar. *Performance is reported only after full
+evidence parity passes.*
 
 ## Gated parallelism (`KOBOLD.PERF.1`)
 
