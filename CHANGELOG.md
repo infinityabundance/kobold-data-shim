@@ -14,6 +14,11 @@
   identifies the per-record stage as the bottleneck (the part PERF.1's Rayon already parallelizes
   byte-identically), with aggregation kept serial/ordered. Full custody workload (reconcile + POSTING.1 +
   PRIVACY.REDACTION.1) proven byte-identical scalar vs Rayon. +6 NEG.PERF.*. tests/perf2.rs.
+- **KOBOLD.LAYOUT.REDEFINES.2 — overlapping REDEFINES view manifest.** `redefines_manifest` records each
+  `REDEFINES` storage region (offset/length/`raw_sha256`) with every overlapping view decoded independently
+  over the SAME bytes; `active_view` is `claimed:false` by default and admitted only by a declared
+  discriminator (unknown -> false). Layout-valid byte views, never inferred business meaning. +5
+  NEG.REDEFINES.*. tests/redefines.rs (4).
 
 ## [0.6.3]
 - **KOBOLD.DATA.6 — COMP-6 composed.** One unsigned COMP-6 field per family (ACCOUNT-SEQUENCE `9(8)`,

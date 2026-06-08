@@ -2,7 +2,7 @@
 
 <img src="assets/kobold_data_shim.png" width="200">
 
-[![crates.io](https://img.shields.io/crates/v/kobold-data-shim.svg)](https://crates.io/crates/kobold-data-shim) [![docs.rs](https://img.shields.io/docsrs/kobold-data-shim)](https://docs.rs/kobold-data-shim) ![license](https://img.shields.io/badge/license-Apache--2.0-blue) ![kernel](https://img.shields.io/badge/kernel-gnucobol--rs_(oracle--proven)-orange) ![courts](https://img.shields.io/badge/KOBOLD_courts-14-brightgreen) ![fail](https://img.shields.io/badge/unsupported-fails_closed-success)
+[![crates.io](https://img.shields.io/crates/v/kobold-data-shim.svg)](https://crates.io/crates/kobold-data-shim) [![docs.rs](https://img.shields.io/docsrs/kobold-data-shim)](https://docs.rs/kobold-data-shim) ![license](https://img.shields.io/badge/license-Apache--2.0-blue) ![kernel](https://img.shields.io/badge/kernel-gnucobol--rs_(oracle--proven)-orange) ![courts](https://img.shields.io/badge/KOBOLD_courts-15-brightgreen) ![fail](https://img.shields.io/badge/unsupported-fails_closed-success)
 
 **A verifiable COBOL record-decoding shim for data-migration pipelines.** Give it a copybook and a
 raw record dump; it tells you — byte-exactly — *what that COBOL record actually meant*, by composing
@@ -27,6 +27,7 @@ guessed — the reconciliation signal that real migrations need.
 | `EXTRACT.PROFILE.1` | declared extraction provenance | extraction truth · copybook freshness |
 | `BANK.RECONCILE.1` | generated operator reconciliation **view** | new evidence (it is a view) · match ≠ correctness |
 | `DIFF.1` | structural diff vs a **declared** expected artifact | oracle authority · business truth · match ≠ correctness |
+| `LAYOUT.REDEFINES.2` | overlapping REDEFINES **byte views** + declared active view | which view is active (unless declared) · layout-valid ≠ business meaning |
 | `PRIVACY.REDACTION.1` | declared redaction, hashes/provenance kept | anonymization · compliance · reversibility |
 | `CORPUS.2` | hostile fixtures fail closed (none silently clean) | production representativeness |
 | `PERF.1` | gated Rayon, byte-identical to scalar | production / parallel throughput |
@@ -223,6 +224,15 @@ counts, dirty/unsupported counts, redaction counts, and the **refused truth laye
 an aggregated SARIF of the *existing* findings. It **introduces no new evidence** (`introduces_new_evidence:
 false`) and a match proves equality to the **declared** totals, *not* posting, ledger, settlement,
 account-balance, or business truth.
+
+## Overlapping REDEFINES views (`KOBOLD.LAYOUT.REDEFINES.2`)
+
+In financial files a `REDEFINES` region can be an account view, a loan view, a card view, a trailer overlay
+— all **layout-valid**, only one **meaningful**. `redefines_manifest` records the overlapping storage views
+as **byte evidence**: which fields share storage (offset/length/`raw_sha256`), each view **decoded
+independently over the same bytes**, and `active_view` — which stays **`claimed:false`** unless a declared
+discriminator/profile admits it (an unknown discriminator keeps it false). *It proves overlapping byte
+VIEWS, not which view is semantically active; layout-valid ≠ business meaning.* +5 NEG.REDEFINES.*.
 
 ## Structural diff vs a declared artifact (`KOBOLD.DIFF.1`)
 

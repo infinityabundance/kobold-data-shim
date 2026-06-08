@@ -48,6 +48,7 @@ pub use privacy::{
     redact_record, DefaultAction, FieldRule, RedactionAction, RedactionPolicy, RedactionResult,
 };
 pub use recon2::{reconcile_transform, ReconTransformResult, Transform, TransformOp};
+pub use redefines::{redefines_manifest, RedefinesDiscriminator, RedefinesManifest};
 
 /// The record's declared character encoding (`KOBOLD.DATA.3`). **Never auto-detected** — the caller
 /// states it. `Cp500` decodes *alphanumeric DISPLAY* fields through the sealed `GNURUST.15` table;
@@ -94,6 +95,7 @@ pub mod posting;
 pub mod privacy;
 pub mod recon;
 pub mod recon2;
+pub mod redefines;
 pub mod sha256;
 pub use operator::{control_totals, explain_field, DirtyMode, STALE_COPYBOOK_RISK};
 
