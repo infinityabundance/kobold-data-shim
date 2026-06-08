@@ -52,6 +52,12 @@
   evidence), signed COMP-6 (unsupported), trailer mismatch, unknown record type/polarity, DB2 null/
   truncation/wrong-usage indicators, undeclared transform targets, and identifier record-truth (value is
   the numeric, raw_hex preserves the original digits). tests/corpus2.rs + recon/corpus2-manifest.json.
+- **KOBOLD.POSTING.1 — declared posting-unit custody manifest.** Binds the banking spine (BANK.1/BANK.2/
+  DB2HOST.1) into one custody record: batch identity, business date, extract metadata, a **sha256 hash
+  chain over record ORDER** (reordering changes the chain), sequence min/max/duplicates/(gaps only when
+  `sequence_contiguous` is declared), and duplicate transaction ids. `posting_truth`/`ledger_truth`/
+  `business_truth` claimed:false. +5 NEG.POSTING.*. tests/posting.rs (6). NOT ledger acceptance /
+  settlement finality / account balance / business truth.
 
 ## [0.6.2]
 - **KOBOLD.DATA.5 — cp500 numeric DISPLAY composed.** EBCDIC zoned-decimal numeric DISPLAY fields now

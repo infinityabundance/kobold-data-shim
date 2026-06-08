@@ -140,6 +140,16 @@ proven; **posting, ledger, and business truth are explicitly `claimed: false`** 
 profiles. *A balanced file is not a correct file; a trailer match is not ledger acceptance.* The full
 banking refusal set is in the registry (`NEG.BANKING.*`).
 
+## Posting-unit custody (`KOBOLD.POSTING.1`)
+
+A **declared** posting-unit manifest binds the banking spine into one custody record — *which exact
+records, in which order, were reconciled* — without claiming the unit was posted, accepted, or settled.
+`posting_manifest` records the batch identity, business date, extract metadata, a **sha256 hash chain over
+record order** (reordering changes the chain), the sequence min/max/duplicates (and **gaps only when the
+profile declares the sequence contiguous**), and duplicate transaction ids. `posting_truth` /
+`ledger_truth` / `business_truth` stay `claimed: false` — *a sequenced, de-duplicated batch is custody
+evidence, not ledger acceptance or settlement finality.*
+
 ## Adversarial corpus (`KOBOLD.CORPUS.2`)
 
 Hostile and banking-shaped fixtures that prove the court **refuses plausible wrongness** — each must

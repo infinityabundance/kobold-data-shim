@@ -35,6 +35,7 @@ use gnucobol_rs::{
     FieldAttr, Usage, COB_FLAG_NO_SIGN_NIBBLE, COB_TYPE_NUMERIC_BINARY, COB_TYPE_NUMERIC_DISPLAY,
     COB_TYPE_NUMERIC_PACKED,
 };
+pub use posting::{posting_manifest, PostingManifest, PostingProfile};
 pub use recon2::{reconcile_transform, ReconTransformResult, Transform, TransformOp};
 
 /// The record's declared character encoding (`KOBOLD.DATA.3`). **Never auto-detected** — the caller
@@ -75,6 +76,7 @@ pub mod banking;
 pub mod db2host;
 pub mod file;
 pub mod operator;
+pub mod posting;
 pub mod recon;
 pub mod recon2;
 pub mod sha256;
