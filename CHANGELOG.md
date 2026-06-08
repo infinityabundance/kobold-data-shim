@@ -46,6 +46,12 @@
   `posting_truth` / `ledger_truth` / `business_truth` claimed:false**. Undeclared targets fail closed;
   nothing outside the declared field is touched. NOT Procedure Division / production write-back / file
   rewrite parity / ledger acceptance / business truth. tests/recon2.rs (4).
+- **KOBOLD.CORPUS.2 — adversarial / banking-shaped corpus.** Hostile fixtures across 5 buckets (file/
+  container, storage, banking, database, transform) each produce an expected fail-closed finding; none
+  silently decodes as clean. Proves: short/partial-record handling, invalid packed nibble (dirty
+  evidence), signed COMP-6 (unsupported), trailer mismatch, unknown record type/polarity, DB2 null/
+  truncation/wrong-usage indicators, undeclared transform targets, and identifier record-truth (value is
+  the numeric, raw_hex preserves the original digits). tests/corpus2.rs + recon/corpus2-manifest.json.
 
 ## [0.6.2]
 - **KOBOLD.DATA.5 — cp500 numeric DISPLAY composed.** EBCDIC zoned-decimal numeric DISPLAY fields now

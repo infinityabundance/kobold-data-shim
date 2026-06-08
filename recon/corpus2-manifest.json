@@ -1,0 +1,36 @@
+{
+  "schema": "kobold-corpus2-manifest-v1",
+  "court": "KOBOLD.CORPUS.2",
+  "doctrine": "Adversarial/banking-shaped fixtures proving the court refuses plausible wrongness: each hostile fixture has an expected fail-closed finding/behavior; none silently decodes as clean. Synthetic only; not production representativeness.",
+  "buckets": {
+    "2A_file_container": [
+      {"fixture": "short trailing record", "expected": "ExitCode::InvalidInputShape"},
+      {"fixture": "unexpected final newline", "expected": "ExitCode::InvalidInputShape"},
+      {"fixture": "record_len = 0", "expected": "ExitCode::IoOrConfigError"},
+      {"fixture": "partial under evidence policy", "expected": "partial_present + DecodedWithEvidenceWarnings"}
+    ],
+    "2B_storage": [
+      {"fixture": "invalid packed sign nibble", "expected": "invalid_fields lists it (dirty evidence, never coerced)"},
+      {"fixture": "signed S9(n) COMP-6", "expected": "category=unsupported (GnuCOBOL makes it COMP-3)"}
+    ],
+    "2C_banking": [
+      {"fixture": "trailer total mismatch", "expected": "KOBOLD-BANK-CONTROL-MISMATCH"},
+      {"fixture": "unknown H/D/T discriminator", "expected": "KOBOLD-BANK-UNKNOWN-RECORD-TYPE"},
+      {"fixture": "unknown DR/CR polarity value", "expected": "KOBOLD-BANK-UNKNOWN-POLARITY"}
+    ],
+    "2D_database": [
+      {"fixture": "null indicator (-1) while bytes decode", "expected": "semantic_null=true + decoded_bytes_preserved"},
+      {"fixture": "truncation indicator (+5)", "expected": "truncation_evidence=true"},
+      {"fixture": "wrong-usage indicator (not COMP-5)", "expected": "KOBOLD-DB2-WRONG-INDICATOR-USAGE"}
+    ],
+    "2E_transform": [
+      {"fixture": "undeclared condition target", "expected": "KOBOLD-RECON2-UNDECLARED-CONDITION + before==after"},
+      {"fixture": "undeclared field target", "expected": "KOBOLD-RECON2-UNDECLARED-FIELD + no side effects"}
+    ],
+    "identifier": [
+      {"fixture": "PIC 9(10) with leading zeros", "expected": "record-truth numeric value (string); leading-zero identity needs a declared role; raw_hex preserves the digits"}
+    ]
+  },
+  "tests": "tests/corpus2.rs",
+  "non_claims": ["production representativeness", "customer-data coverage", "business correctness"]
+}

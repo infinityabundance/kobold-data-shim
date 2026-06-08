@@ -140,6 +140,15 @@ proven; **posting, ledger, and business truth are explicitly `claimed: false`** 
 profiles. *A balanced file is not a correct file; a trailer match is not ledger acceptance.* The full
 banking refusal set is in the registry (`NEG.BANKING.*`).
 
+## Adversarial corpus (`KOBOLD.CORPUS.2`)
+
+Hostile and banking-shaped fixtures that prove the court **refuses plausible wrongness** — each must
+produce a named fail-closed finding, and **none may silently decode as clean** (`tests/corpus2.rs`,
+manifest in [`recon/corpus2-manifest.json`](recon/corpus2-manifest.json)): short/partial records, invalid
+packed nibbles, signed COMP-6, trailer mismatch, unknown record type, unknown DR/CR polarity, DB2 null /
+truncation / wrong-usage indicators, and undeclared transform targets. Synthetic only — *not* production
+representativeness or business correctness.
+
 ## Transformed-record reconciliation (`KOBOLD.RECON.2`)
 
 A **declared** transform — a *named sealed court* — takes input bytes to output bytes, and both states
