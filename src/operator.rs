@@ -115,7 +115,7 @@ fn display_num_valid(bytes: &[u8]) -> bool {
 }
 
 /// The sealed courts that produced a field's value (for the `explain` evidence trail).
-fn sealed_courts(
+pub(crate) fn sealed_courts(
     field_type: u16,
     category: &str,
     used_copy: bool,

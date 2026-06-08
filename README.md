@@ -2,7 +2,7 @@
 
 <img src="assets/kobold_data_shim.png" width="200">
 
-[![crates.io](https://img.shields.io/crates/v/kobold-data-shim.svg)](https://crates.io/crates/kobold-data-shim) [![docs.rs](https://img.shields.io/docsrs/kobold-data-shim)](https://docs.rs/kobold-data-shim) ![license](https://img.shields.io/badge/license-Apache--2.0-blue) ![kernel](https://img.shields.io/badge/kernel-gnucobol--rs_(oracle--proven)-orange) ![courts](https://img.shields.io/badge/KOBOLD_courts-18-brightgreen) ![fail](https://img.shields.io/badge/unsupported-fails_closed-success)
+[![crates.io](https://img.shields.io/crates/v/kobold-data-shim.svg)](https://crates.io/crates/kobold-data-shim) [![docs.rs](https://img.shields.io/docsrs/kobold-data-shim)](https://docs.rs/kobold-data-shim) ![license](https://img.shields.io/badge/license-Apache--2.0-blue) ![kernel](https://img.shields.io/badge/kernel-gnucobol--rs_(oracle--proven)-orange) ![courts](https://img.shields.io/badge/KOBOLD_courts-19-brightgreen) ![fail](https://img.shields.io/badge/unsupported-fails_closed-success)
 
 **A verifiable COBOL record-decoding shim for data-migration pipelines.** Give it a copybook and a
 raw record dump; it tells you — byte-exactly — *what that COBOL record actually meant*, by composing
@@ -31,6 +31,7 @@ guessed — the reconciliation signal that real migrations need.
 | `SENTINEL.PROFILE.1` | declared sentinel markers (LOW/HIGH/SPACES/zero-date…) as **evidence** | null · date · missing · business status · undeclared inference |
 | `DATE.PROFILE.1` | declared date format (YYYYMMDD/YYDDD) validation | PIC≠date · zero/high≠null/max · Y2K window · date arithmetic |
 | `CURRENCY.PROFILE.1` | declared amount scale + currency-code **evidence** | V99≠money · code≠legal tender · FX · rounding · sign≠polarity · rate≠amount |
+| `TOOLING.EXPORT.1` | IDE/tooling evidence map (provenance·courts·witness·redaction) | not an LSP/IDE/parser · not a source of truth · no new evidence |
 | `PRIVACY.REDACTION.1` | declared redaction, hashes/provenance kept | anonymization · compliance · reversibility |
 | `CORPUS.2` | hostile fixtures fail closed (none silently clean) | production representativeness |
 | `PERF.1` | gated Rayon, byte-identical to scalar | production / parallel throughput |
@@ -227,6 +228,15 @@ counts, dirty/unsupported counts, redaction counts, and the **refused truth laye
 an aggregated SARIF of the *existing* findings. It **introduces no new evidence** (`introduces_new_evidence:
 false`) and a match proves equality to the **declared** totals, *not* posting, ledger, settlement,
 account-balance, or business truth.
+
+## Tooling evidence export (`KOBOLD.TOOLING.EXPORT.1`)
+
+`tooling_export` emits an **IDE/tooling-friendly evidence map** (`kobold-tooling-export-v1`) from the
+existing sealed-court decode + provenance: per field the qualified name, copybook path + line, PIC, USAGE,
+offset/length, decoded value **or redaction status** (no cleartext for a redacted field), `raw_sha256`, the
+**sealed court ids** that produced it, the witness `dialect_profile_id`, and per-field non-claims. It is a
+**downstream map an IDE/LSP/auditor UI could consume — not the tool**: `introduces_new_evidence:false`, and
+it refuses to be an LSP, IDE, full parser, or source of truth. +6 NEG.TOOLING.*.
 
 ## Declared currency profiles (`KOBOLD.CURRENCY.PROFILE.1`)
 

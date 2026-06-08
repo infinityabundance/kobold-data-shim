@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.6
+
+- **KOBOLD.TOOLING.EXPORT.1 — generated evidence export for downstream tools.** `tooling_export` maps each
+  decoded field to copybook provenance (path/line), PIC/USAGE, offset/length, decoded value OR redaction
+  status (no cleartext for a redacted field), `raw_sha256`, the sealed court ids that produced it, the
+  witness `dialect_profile_id`, and per-field non-claims. `introduces_new_evidence:false`; refuses to be an
+  LSP/IDE/parser/source-of-truth. +6 NEG.TOOLING.*. tests/tooling.rs (3).
+
 ## 0.6.5
 
 - **KOBOLD.CURRENCY.PROFILE.1 — declared currency/amount-profile evidence.** `currency_validate` checks a

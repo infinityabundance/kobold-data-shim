@@ -1,6 +1,6 @@
 [package]
 name = "kobold-data-shim"
-version = "0.6.5"
+version = "0.6.6"
 edition = "2021"
 rust-version = "1.74"
 description = "A verifiable COBOL record-decoding shim for data-migration pipelines: ingest a copybook + a raw record dump and decode it byte-exactly via the oracle-proven gnucobol-rs courts (PIC, layout, COPY, decimal MOVE)."
