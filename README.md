@@ -2,12 +2,34 @@
 
 <img src="assets/kobold_data_shim.png" width="200">
 
+[![crates.io](https://img.shields.io/crates/v/kobold-data-shim.svg)](https://crates.io/crates/kobold-data-shim) [![docs.rs](https://img.shields.io/docsrs/kobold-data-shim)](https://docs.rs/kobold-data-shim) ![license](https://img.shields.io/badge/license-Apache--2.0-blue) ![kernel](https://img.shields.io/badge/kernel-gnucobol--rs_(oracle--proven)-orange) ![courts](https://img.shields.io/badge/KOBOLD_courts-12-brightgreen) ![fail](https://img.shields.io/badge/unsupported-fails_closed-success)
 
 **A verifiable COBOL record-decoding shim for data-migration pipelines.** Give it a copybook and a
 raw record dump; it tells you — byte-exactly — *what that COBOL record actually meant*, by composing
 the oracle-proven [`gnucobol-rs`](https://github.com/infinityabundance/gnucobol-rs) compatibility
 courts. Fields outside the sealed subset **fail closed** (reported `unsupported`), never silently
 guessed — the reconciliation signal that real migrations need.
+
+> [!IMPORTANT]
+> KOBOLD does not turn COBOL data into truth. It turns legacy bytes into **accountable evidence** under
+> declared courts, profiles, custody, and refusals.
+
+## The courts at a glance
+
+| 🔒 court | proves (✅) | refuses (❌) |
+|---|---|---|
+| `RECON.1` | end-to-end fixed-record decode → byte-stable JSONL + audit | business truth |
+| `RECON.2` | declared transform before/after bytes + audit delta | write-back · posting · ledger truth |
+| `FILE.1` | fixed-record container ingest (offsets, exit codes) | GnuCOBOL file-I/O parity |
+| `BANK.1` / `BANK.2` | declared-vs-observed totals · numeric role · DR/CR polarity | posting · ledger truth (sign ≠ polarity) |
+| `DB2HOST.1` | null / truncation indicators (bytes preserved) | database truth without the indicator |
+| `POSTING.1` | record-order custody + sha256 hash chain | ledger acceptance · settlement finality |
+| `EXTRACT.PROFILE.1` | declared extraction provenance | extraction truth · copybook freshness |
+| `BANK.RECONCILE.1` | generated operator reconciliation **view** | new evidence (it is a view) · match ≠ correctness |
+| `PRIVACY.REDACTION.1` | declared redaction, hashes/provenance kept | anonymization · compliance · reversibility |
+| `CORPUS.2` | hostile fixtures fail closed (none silently clean) | production representativeness |
+| `PERF.1` | gated Rayon, byte-identical to scalar | production / parallel throughput |
+| `OPERATOR.1` | explain · totals · dirty-mode (accountable fields) | silent coercion of dirty data |
 
 ```text
 $ kobold-record-dump --copybook CUST.cpy --record dump.bin
@@ -132,6 +154,7 @@ absorbed, resynced, or repaired; the encoding is always explicit.
 | 4 | internal invariant failure |
 | 5 | I/O or configuration error |
 
+> [!IMPORTANT]
 > **Doctrine.** KOBOLD.FILE.1 admits only explicit fixed-record container ingest: bytes are split by a
 > caller-declared record length with stable offsets, policies, manifests, and exit codes, while GnuCOBOL
 > file I/O, indexed files, line-sequential runtime behavior, auto-resynchronization, and silent repair
