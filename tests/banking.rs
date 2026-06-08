@@ -6,9 +6,7 @@ use gnucobol_rs::{
     build_field, cob_move, FieldAttr, Usage, COB_FLAG_HAVE_SIGN, COB_TYPE_NUMERIC_DISPLAY,
 };
 use kobold_data_shim::banking::{AccountingProfile, NumericRole, PolarityProfile};
-use kobold_data_shim::{
-    reconcile_banking, ControlSpec, Encoding, NoCopy, Variant, VariantSpec,
-};
+use kobold_data_shim::{reconcile_banking, ControlSpec, Encoding, NoCopy, Variant, VariantSpec};
 
 const HDR: &str = "       01 H.\n           05 REC-TYPE PIC X.\n           05 BATCH-ID PIC X(10).\n           05 BUS-DATE PIC 9(8).\n           05 FILLER PIC X(11).\n";
 const DTL: &str = "       01 D.\n           05 REC-TYPE PIC X.\n           05 ACCT-NO PIC 9(10).\n           05 DR-CR-IND PIC X.\n           05 AMOUNT PIC S9(7)V99 COMP-3.\n           05 RATE PIC S9(1)V9(4) COMP-3.\n           05 FILLER PIC X(10).\n";

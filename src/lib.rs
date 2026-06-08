@@ -25,6 +25,7 @@ use gnucobol_rs::copybook::expand;
 use gnucobol_rs::layout::{lay_out, Item, Odo};
 
 pub use banking::{reconcile_banking, BankingResult, ControlSpec, Variant, VariantSpec};
+pub use db2host::{db2host_evaluate, Db2HostResult, IndicatorManifest, IndicatorPair, NullState};
 pub use file::{ingest, ExitCode, Ingest, IngestPolicy, PartialRecord, TrailingNewline};
 /// Re-exported so callers can implement a custom copybook search path for [`decode_with_resolver`].
 pub use gnucobol_rs::copybook::CopyResolver;
@@ -70,6 +71,7 @@ fn logical_bytes<'a>(
 use std::collections::HashMap;
 
 pub mod banking;
+pub mod db2host;
 pub mod file;
 pub mod operator;
 pub mod recon;

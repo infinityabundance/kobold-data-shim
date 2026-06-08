@@ -32,6 +32,13 @@
   is not polarity), CR/DB presentation and field-name heuristics are never used, and an unknown polarity
   value fails closed. The casefile embeds the `accounting_profile` (with `numeric_sign_policy:not_polarity`).
   tests/banking.rs now 5 (incl. negative-D-still-debit, rate-not-summed, unknown-fails-closed).
+- **KOBOLD.DB2HOST.1 — declared Db2 host-variable null/truncation indicator manifest.** A decoded field
+  is marked `semantic_null` / `truncation_evidence` ONLY via a declared `S9(4) COMP-5` indicator pairing
+  (negative=null, zero=present, positive=truncation). Decoded bytes are always preserved; a missing or
+  wrong-usage indicator fails closed; a field with no declared indicator gets no null-state claim. Emits a
+  `db2_host` audit block + a casefile keeping `byte_truth`/`record_truth` separate from `database_truth`
+  (`claimed:false`). NOT SQL execution / precompiler / SQLCA / DBRM-package / database truth. tests/
+  db2host.rs (5).
 
 ## [0.6.2]
 - **KOBOLD.DATA.5 — cp500 numeric DISPLAY composed.** EBCDIC zoned-decimal numeric DISPLAY fields now

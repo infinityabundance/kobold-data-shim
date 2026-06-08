@@ -48,7 +48,8 @@ sign nibble or a scale is a financial discrepancy. This shim makes that step **v
 - it reuses the sealed [`gnucobol-rs`] courts — `GNURUST.2` MOVE bytes, `GNURUST.3/9` PIC (+P),
   `GNURUST.4/10` layout (+ODO), `GNURUST.5/6` COPY/REPLACING, `GNURUST.7/13` arithmetic, `GNURUST.8`
   VALUE, `GNURUST.11/12` LEVEL-88, `GNURUST.14` binary COMP/COMP-5/COMP-X, `GNURUST.15` cp500 EBCDIC
-  decode, `GNURUST.16` edited-picture decode — each proven against the GnuCOBOL oracle;
+  text decode, `GNURUST.16` edited-picture decode, `GNURUST.17` cp500 zoned numeric, `GNURUST.18`
+  COMP-6 unsigned packed — each proven against the GnuCOBOL oracle;
 - it **fails closed** on anything outside those courts, so unsupported fields are surfaced for
   reconciliation rather than mis-decoded.
 
@@ -138,6 +139,15 @@ It emits a `kobold-banking-forensic-casefile-v1` with truth **layers**: byte tru
 proven; **posting, ledger, and business truth are explicitly `claimed: false`** and require declared
 profiles. *A balanced file is not a correct file; a trailer match is not ledger acceptance.* The full
 banking refusal set is in the registry (`NEG.BANKING.*`).
+
+## Db2 host-variable null indicators (`KOBOLD.DB2HOST.1`)
+
+A field can decode perfectly and still be **semantically NULL** at the database boundary. This court
+applies a **declared** indicator manifest — a `PIC S9(4) COMP-5` indicator paired with a value field:
+**negative → null, zero → present, positive → truncation evidence**. The **decoded bytes are always
+preserved**; a missing or wrong-usage indicator **fails closed**; a field with no declared indicator gets
+**no** null-state claim. The casefile keeps `byte_truth`/`record_truth` separate from `database_truth`
+(`claimed: false`) — *the host value is not the database value without its indicator*.
 
 ## Fixed-record container ingest (`KOBOLD.FILE.1`)
 
