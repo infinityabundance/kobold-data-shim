@@ -21,23 +21,6 @@ CUST                         0    10 group         (group)
 Every numeric value is decoded by a court proven **byte-identical to GnuCOBOL 3.2's `libcob`** under
 a differential sweep. The raw bytes travel alongside every field as the audit trail.
 
-
-## Operator trust layer (KOBOLD.OPERATOR.1)
-
-Every decoded field is **accountable** — point at a value and ask *why*:
-
-```sh
-kobold-recon explain account.cpy input.dat ACCOUNT-RECORD.BALANCE --record 0 --copydir .
-kobold-recon totals  account.cpy input.dat --record-len 42 --copydir .
-kobold-recon decode  account.cpy input.dat --record-len 42 --dirty-mode strict
-```
-
-`explain` returns source provenance (`copybook:line`), offset/size, usage/pic, raw bytes, decoded
-value, the **sealed courts** that produced it, dependent LEVEL-88s, the record hash, the explicit
-non-claims, and a stale-copybook risk note. `totals` gives control totals (record count, per-field
-numeric sums, condition counts, invalid/unsupported). `decode --dirty-mode` preserves dirty bytes as
-evidence (or rejects in `strict`) — **never coerces**. Duplicate JSON keys are refused, not clobbered.
-
 ## Why it exists
 
 Mainframe modernization on AWS routinely ingests VSAM/flat-file exports into S3 + Aurora/Redshift.
@@ -71,6 +54,22 @@ decoded types (values stay strings — never floats). `decode_record(...)` addit
 **LEVEL-88 condition names** (`gnucobol-rs`' `eval_88`), so a decoded record carries both fields and
 condition truths.
 
+## Operator trust layer (KOBOLD.OPERATOR.1)
+
+Every decoded field is **accountable** — point at a value and ask *why*:
+
+```sh
+kobold-recon explain account.cpy input.dat ACCOUNT-RECORD.BALANCE --record 0 --copydir .
+kobold-recon totals  account.cpy input.dat --record-len 42 --copydir .
+kobold-recon decode  account.cpy input.dat --record-len 42 --dirty-mode strict
+```
+
+`explain` returns source provenance (`copybook:line`), offset/size, usage/pic, raw bytes, decoded
+value, the **sealed courts** that produced it, dependent LEVEL-88s, the record hash, the explicit
+non-claims, and a stale-copybook risk note. `totals` gives control totals (record count, per-field
+numeric sums, condition counts, invalid/unsupported). `decode --dirty-mode` preserves dirty bytes as
+evidence (or rejects in `strict`) — **never coerces**. Duplicate JSON keys are refused, not clobbered.
+
 ## End-to-end reconciliation (`KOBOLD.RECON.1`)
 
 `kobold_data_shim::recon::reconcile` (and the `kobold-recon` CLI) decode a fixed-record file into
@@ -93,112 +92,6 @@ proven byte-stable across runs and CLI == library; `unsupported.json` lists anyt
 sealed courts — never a silent fallback. The inverse direction (`SET condition TO TRUE` →
 bytes → `eval_88` true) is the [`recon/condition-set/`](recon/condition-set/) fixture.
 
-## AWS reference architecture (S3 → verified records)
-
-```text
-Mainframe VSAM/flat export
-        │  (AWS Transfer Family / Direct Connect; cp500 EBCDIC text decoded in-shim via --encoding)
-        ▼
-   S3 landing zone ──(ObjectCreated)──► Lambda / AWS Batch / Glue
-        │                                   │ kobold-data-shim:
-        │                                   │   COPY-expand copybook → lay_out → decode (cob_move/Decimal)
-        │                                   │   emit Parquet/JSON  +  per-record audit (raw_hex, court, unsupported)
-        ▼                                   ▼
-   raw retained                     S3 (Parquet) → Athena/Glue        Aurora (txn)
-                                    + S3 (audit/parity receipts) → reconciliation jobs
-```
-
-The serverless packaging (Lambda layer / container sidecar) and a benchmark harness live in sibling
-repos: [`kobold-lambda-layer`](https://github.com/infinityabundance/kobold-lambda-layer) and
-[`kobold-bench`](https://github.com/infinityabundance/kobold-bench).
-
-## Parity proofs as a migration artifact
-
-Because the kernel is oracle-proven, a migration can ship **evidence**, not assertions: the
-`gnucobol-rs` differential sweeps (`FAIL=0`), Kani proofs, fuzz runs, and the machine-readable
-non-claims become part of the compliance package (SOX/audits). This shim adds the per-record audit
-trail (raw bytes + the court each value came from + any `unsupported` field).
-
-## Banking control totals (`KOBOLD.BANK.1`)
-
-Header/detail/trailer banking files, reconciled under a **declared** profile — *the court's job is to stop
-banking data being over-interpreted*:
-
-- route records by a declared discriminator (H/D/T) to per-variant copybooks; **unknown type fails closed**;
-- reconcile the trailer's **declared** control totals (count / debit / credit) against KOBOLD-**observed**
-  totals — a `KOBOLD-BANK-CONTROL-MISMATCH` finding (SARIF-shaped) on any discrepancy;
-- debit/credit polarity comes only from the **declared** DR/CR field, **never** a numeric sign.
-
-It composes a **declared accounting profile** (`KOBOLD.BANK.2` / `kobold-accounting-profile-v1`): each
-field is given a numeric **role** (amount / rate / identifier / code / sequence / count) and **only
-`amount` fields are summed** — a rate or an account-id is numeric but never money. Polarity comes only
-from a declared source field + value tables; a **negative amount with a declared `D` is still a debit**
-(sign is not polarity), and an unknown polarity value fails closed.
-
-It emits a `kobold-banking-forensic-casefile-v1` with truth **layers**: byte truth and record truth are
-proven; **posting, ledger, and business truth are explicitly `claimed: false`** and require declared
-profiles. *A balanced file is not a correct file; a trailer match is not ledger acceptance.* The full
-banking refusal set is in the registry (`NEG.BANKING.*`).
-
-## Gated parallelism (`KOBOLD.PERF.1`)
-
-`reconcile_encoded_parallel` (behind the **off-by-default `rayon` feature**) decodes records with
-record-level Rayon, emitting **byte-identical** evidence to scalar [`reconcile_encoded`] — same JSONL,
-audit, unsupported ledger, `decode_output_sha256`, and downstream posting hash chain. The program is
-parsed once and the parallel path captures only the `Sync` layout (no resolver), with an order-preserving
-`collect`. *Performance is a derived property of preserved evidence, not a separate semantic authority* —
-proven in `tests/perf1.rs` (scalar == rayon across n=1…999).
-
-## Evidence-preserving redaction (`KOBOLD.PRIVACY.REDACTION.1`)
-
-Before real files enter the pipeline, privacy is a **court**, not a footnote. `redact_record` applies a
-**declared** field policy: a value is **withheld** (`redact_value_keep_hash` / `…_and_raw_keep_hashes`) or
-**tokenized** (`tokenize_deterministic`, scope-stable, never reversible), while `value_sha256`,
-`raw_sha256`, offset/size, copybook provenance, and court identity stay visible so the evidence remains
-auditable. An **unlisted field fails closed** under a `deny_unlisted` policy, and `public_output_claim` is
-always `false`. *It claims no anonymization, regulatory compliance, reversibility, or safe public release.*
-
-## Extraction provenance + copybook freshness (`KOBOLD.EXTRACT.PROFILE.1`)
-
-Every real migration depends on *how the bytes were obtained*. `extract_manifest` records the **declared**
-provenance — file organization, extract method, record-length source, copybook source, any code-set
-conversion done **before** KOBOLD, source-system cutoff, operator assumptions — bound to the data +
-copybook sha256. It **refuses extraction truth** and holds **copybook freshness as a permanent
-uncertainty** (`copybook_freshness: {claimed:false, risk: "a stale copybook may decode bytes plausibly
-wrong"}`). *KOBOLD proves decoded extracted bytes — not that the extraction or the copybook is production
-truth.*
-
-## Banking reconciliation view (`KOBOLD.BANK.RECONCILE.1`)
-
-An **opinionated generated operator view** that lets an operator read the banking evidence in one report —
-*Did this batch reconcile under the declared profile? What failed? What was refused? What should I not
-conclude?* `bank_reconcile_report` assembles **only from existing court structs** (BANK.1/2 summary,
-POSTING.1 custody, DB2HOST.1 indicators, PRIVACY redaction counts): declared-vs-observed count/debit/credit
-+ matched/mismatch verdict, sequence min/max/gaps/duplicates + `last_chain_hash`, DB2 null/truncation
-counts, dirty/unsupported counts, redaction counts, and the **refused truth layers** — emitting json + md +
-an aggregated SARIF of the *existing* findings. It **introduces no new evidence** (`introduces_new_evidence:
-false`) and a match proves equality to the **declared** totals, *not* posting, ledger, settlement,
-account-balance, or business truth.
-
-## Posting-unit custody (`KOBOLD.POSTING.1`)
-
-A **declared** posting-unit manifest binds the banking spine into one custody record — *which exact
-records, in which order, were reconciled* — without claiming the unit was posted, accepted, or settled.
-`posting_manifest` records the batch identity, business date, extract metadata, a **sha256 hash chain over
-record order** (reordering changes the chain), the sequence min/max/duplicates (and **gaps only when the
-profile declares the sequence contiguous**), and duplicate transaction ids. `posting_truth` /
-`ledger_truth` / `business_truth` stay `claimed: false` — *a sequenced, de-duplicated batch is custody
-evidence, not ledger acceptance or settlement finality.*
-
-## Adversarial corpus (`KOBOLD.CORPUS.2`)
-
-Hostile and banking-shaped fixtures that prove the court **refuses plausible wrongness** — each must
-produce a named fail-closed finding, and **none may silently decode as clean** (`tests/corpus2.rs`,
-manifest in [`recon/corpus2-manifest.json`](recon/corpus2-manifest.json)): short/partial records, invalid
-packed nibbles, signed COMP-6, trailer mismatch, unknown record type, unknown DR/CR polarity, DB2 null /
-truncation / wrong-usage indicators, and undeclared transform targets. Synthetic only — *not* production
-representativeness or business correctness.
-
 ## Transformed-record reconciliation (`KOBOLD.RECON.2`)
 
 A **declared** transform — a *named sealed court* — takes input bytes to output bytes, and both states
@@ -213,15 +106,6 @@ transform only`); **write-back, posting, ledger, and business truth stay `claime
 targets fail closed, and nothing outside the declared field is touched. *Read truth ≠ transform truth ≠
 write-back truth ≠ business truth* — this is reconciliation evidence, **not** production write-back, file
 rewrite parity, or Procedure Division execution.
-
-## Db2 host-variable null indicators (`KOBOLD.DB2HOST.1`)
-
-A field can decode perfectly and still be **semantically NULL** at the database boundary. This court
-applies a **declared** indicator manifest — a `PIC S9(4) COMP-5` indicator paired with a value field:
-**negative → null, zero → present, positive → truncation evidence**. The **decoded bytes are always
-preserved**; a missing or wrong-usage indicator **fails closed**; a field with no declared indicator gets
-**no** null-state claim. The casefile keeps `byte_truth`/`record_truth` separate from `database_truth`
-(`claimed: false`) — *the host value is not the database value without its indicator*.
 
 ## Fixed-record container ingest (`KOBOLD.FILE.1`)
 
@@ -252,6 +136,121 @@ absorbed, resynced, or repaired; the encoding is always explicit.
 > caller-declared record length with stable offsets, policies, manifests, and exit codes, while GnuCOBOL
 > file I/O, indexed files, line-sequential runtime behavior, auto-resynchronization, and silent repair
 > remain outside the claim.
+
+## Banking control totals (`KOBOLD.BANK.1`)
+
+Header/detail/trailer banking files, reconciled under a **declared** profile — *the court's job is to stop
+banking data being over-interpreted*:
+
+- route records by a declared discriminator (H/D/T) to per-variant copybooks; **unknown type fails closed**;
+- reconcile the trailer's **declared** control totals (count / debit / credit) against KOBOLD-**observed**
+  totals — a `KOBOLD-BANK-CONTROL-MISMATCH` finding (SARIF-shaped) on any discrepancy;
+- debit/credit polarity comes only from the **declared** DR/CR field, **never** a numeric sign.
+
+It composes a **declared accounting profile** (`KOBOLD.BANK.2` / `kobold-accounting-profile-v1`): each
+field is given a numeric **role** (amount / rate / identifier / code / sequence / count) and **only
+`amount` fields are summed** — a rate or an account-id is numeric but never money. Polarity comes only
+from a declared source field + value tables; a **negative amount with a declared `D` is still a debit**
+(sign is not polarity), and an unknown polarity value fails closed.
+
+It emits a `kobold-banking-forensic-casefile-v1` with truth **layers**: byte truth and record truth are
+proven; **posting, ledger, and business truth are explicitly `claimed: false`** and require declared
+profiles. *A balanced file is not a correct file; a trailer match is not ledger acceptance.* The full
+banking refusal set is in the registry (`NEG.BANKING.*`).
+
+## Db2 host-variable null indicators (`KOBOLD.DB2HOST.1`)
+
+A field can decode perfectly and still be **semantically NULL** at the database boundary. This court
+applies a **declared** indicator manifest — a `PIC S9(4) COMP-5` indicator paired with a value field:
+**negative → null, zero → present, positive → truncation evidence**. The **decoded bytes are always
+preserved**; a missing or wrong-usage indicator **fails closed**; a field with no declared indicator gets
+**no** null-state claim. The casefile keeps `byte_truth`/`record_truth` separate from `database_truth`
+(`claimed: false`) — *the host value is not the database value without its indicator*.
+
+## Posting-unit custody (`KOBOLD.POSTING.1`)
+
+A **declared** posting-unit manifest binds the banking spine into one custody record — *which exact
+records, in which order, were reconciled* — without claiming the unit was posted, accepted, or settled.
+`posting_manifest` records the batch identity, business date, extract metadata, a **sha256 hash chain over
+record order** (reordering changes the chain), the sequence min/max/duplicates (and **gaps only when the
+profile declares the sequence contiguous**), and duplicate transaction ids. `posting_truth` /
+`ledger_truth` / `business_truth` stay `claimed: false` — *a sequenced, de-duplicated batch is custody
+evidence, not ledger acceptance or settlement finality.*
+
+## Extraction provenance + copybook freshness (`KOBOLD.EXTRACT.PROFILE.1`)
+
+Every real migration depends on *how the bytes were obtained*. `extract_manifest` records the **declared**
+provenance — file organization, extract method, record-length source, copybook source, any code-set
+conversion done **before** KOBOLD, source-system cutoff, operator assumptions — bound to the data +
+copybook sha256. It **refuses extraction truth** and holds **copybook freshness as a permanent
+uncertainty** (`copybook_freshness: {claimed:false, risk: "a stale copybook may decode bytes plausibly
+wrong"}`). *KOBOLD proves decoded extracted bytes — not that the extraction or the copybook is production
+truth.*
+
+## Banking reconciliation view (`KOBOLD.BANK.RECONCILE.1`)
+
+An **opinionated generated operator view** that lets an operator read the banking evidence in one report —
+*Did this batch reconcile under the declared profile? What failed? What was refused? What should I not
+conclude?* `bank_reconcile_report` assembles **only from existing court structs** (BANK.1/2 summary,
+POSTING.1 custody, DB2HOST.1 indicators, PRIVACY redaction counts): declared-vs-observed count/debit/credit
++ matched/mismatch verdict, sequence min/max/gaps/duplicates + `last_chain_hash`, DB2 null/truncation
+counts, dirty/unsupported counts, redaction counts, and the **refused truth layers** — emitting json + md +
+an aggregated SARIF of the *existing* findings. It **introduces no new evidence** (`introduces_new_evidence:
+false`) and a match proves equality to the **declared** totals, *not* posting, ledger, settlement,
+account-balance, or business truth.
+
+## Evidence-preserving redaction (`KOBOLD.PRIVACY.REDACTION.1`)
+
+Before real files enter the pipeline, privacy is a **court**, not a footnote. `redact_record` applies a
+**declared** field policy: a value is **withheld** (`redact_value_keep_hash` / `…_and_raw_keep_hashes`) or
+**tokenized** (`tokenize_deterministic`, scope-stable, never reversible), while `value_sha256`,
+`raw_sha256`, offset/size, copybook provenance, and court identity stay visible so the evidence remains
+auditable. An **unlisted field fails closed** under a `deny_unlisted` policy, and `public_output_claim` is
+always `false`. *It claims no anonymization, regulatory compliance, reversibility, or safe public release.*
+
+## Adversarial corpus (`KOBOLD.CORPUS.2`)
+
+Hostile and banking-shaped fixtures that prove the court **refuses plausible wrongness** — each must
+produce a named fail-closed finding, and **none may silently decode as clean** (`tests/corpus2.rs`,
+manifest in [`recon/corpus2-manifest.json`](recon/corpus2-manifest.json)): short/partial records, invalid
+packed nibbles, signed COMP-6, trailer mismatch, unknown record type, unknown DR/CR polarity, DB2 null /
+truncation / wrong-usage indicators, and undeclared transform targets. Synthetic only — *not* production
+representativeness or business correctness.
+
+## Gated parallelism (`KOBOLD.PERF.1`)
+
+`reconcile_encoded_parallel` (behind the **off-by-default `rayon` feature**) decodes records with
+record-level Rayon, emitting **byte-identical** evidence to scalar [`reconcile_encoded`] — same JSONL,
+audit, unsupported ledger, `decode_output_sha256`, and downstream posting hash chain. The program is
+parsed once and the parallel path captures only the `Sync` layout (no resolver), with an order-preserving
+`collect`. *Performance is a derived property of preserved evidence, not a separate semantic authority* —
+proven in `tests/perf1.rs` (scalar == rayon across n=1…999).
+
+## AWS reference architecture (S3 → verified records)
+
+```text
+Mainframe VSAM/flat export
+        │  (AWS Transfer Family / Direct Connect; cp500 EBCDIC text decoded in-shim via --encoding)
+        ▼
+   S3 landing zone ──(ObjectCreated)──► Lambda / AWS Batch / Glue
+        │                                   │ kobold-data-shim:
+        │                                   │   COPY-expand copybook → lay_out → decode (cob_move/Decimal)
+        │                                   │   emit Parquet/JSON  +  per-record audit (raw_hex, court, unsupported)
+        ▼                                   ▼
+   raw retained                     S3 (Parquet) → Athena/Glue        Aurora (txn)
+                                    + S3 (audit/parity receipts) → reconciliation jobs
+```
+
+The serverless packaging (Lambda layer / container sidecar) and a benchmark harness live in sibling
+repos: [`kobold-lambda-layer`](https://github.com/infinityabundance/kobold-lambda-layer) and
+[`kobold-bench`](https://github.com/infinityabundance/kobold-bench).
+
+## Parity proofs as a migration artifact
+
+Because the kernel is oracle-proven, a migration can ship **evidence**, not assertions: the
+`gnucobol-rs` differential sweeps (`FAIL=0`), Kani proofs, fuzz runs, and the machine-readable
+non-claims become part of the compliance package (SOX/audits). This shim adds the per-record audit
+trail (raw bytes + the court each value came from + any `unsupported` field).
 
 ## Scope & honest edges
 
