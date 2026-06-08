@@ -36,3 +36,8 @@ path = "src/main.rs"
 [[bin]]
 name = "kobold-recon"
 path = "src/bin/recon.rs"
+
+
+[[bin]]
+name = "kobold-pilot"
+path = "src/bin/pilot.rs"

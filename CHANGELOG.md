@@ -1,5 +1,13 @@
 ## Unreleased
 
+- **KOBOLD.PILOT.RUN.1 — `kobold-pilot` redacted pilot runner.** A new bin runs the full pilot chain over a
+  declared extract and writes a redacted, hash-bound evidence packet to disk (extract / redaction.jsonl /
+  bank-reconcile / diff / tooling-export / pilot-packet). Sensitive fields are tokenized before any artifact
+  is written, and the runner aborts if a redacted value leaks. A committed example run is in
+  `reports/pilot-run/`. Declared synthetic default; point it at a real private extract for a real pilot. Not
+  customer acceptance / business correctness / compliance / production readiness / ledger truth. +6
+  NEG.PILOT_RUN.*.
+
 - **KOBOLD.PILOT.WORKFLOW.1 — end-to-end pilot workflow wiring.** An integration (`tests/pilot_workflow.rs`)
   flows a declared synthetic/private-pilot-shaped extract through EXTRACT.PROFILE.1 → PRIVACY.REDACTION.1 →
   BANK.1/2 + BANK.RECONCILE.1 → DIFF.1 → TOOLING.EXPORT.1 → PILOT-PACKET.1, proving the workflow plumbing +
