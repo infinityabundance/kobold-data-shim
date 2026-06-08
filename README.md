@@ -25,7 +25,7 @@ guessed — the reconciliation signal that real migrations need.
 | `DB2HOST.1` | null / truncation indicators (bytes preserved) | database truth without the indicator |
 | `POSTING.1` | record-order custody + sha256 hash chain | ledger acceptance · settlement finality |
 | `EXTRACT.PROFILE.1` | declared extraction provenance | extraction truth · copybook freshness |
-| `BANK.RECONCILE.1` | generated operator reconciliation **view** | new evidence (it is a view) · match ≠ correctness |
+| `BANK.RECONCILE.1` | operator reconciliation **view**, source-casefile **sha-bound** | new evidence · match ≠ correctness · stale source fails |
 | `DIFF.1` | structural diff vs a **declared** expected artifact | oracle authority · business truth · match ≠ correctness |
 | `LAYOUT.REDEFINES.2` | overlapping REDEFINES **byte views** + declared active view | which view is active (unless declared) · layout-valid ≠ business meaning |
 | `SENTINEL.PROFILE.1` | declared sentinel markers (LOW/HIGH/SPACES/zero-date…) as **evidence** | null · date · missing · business status · undeclared inference |
@@ -218,6 +218,12 @@ wrong"}`). *KOBOLD proves decoded extracted bytes — not that the extraction or
 truth.*
 
 ## Banking reconciliation view (`KOBOLD.BANK.RECONCILE.1`)
+
+**Provably derived (not just declared).** The report carries a `source_evidence` block pinning each source
+court casefile by sha256 — `BANK.1`/`BANK.2` + `POSTING.1` + `DB2HOST.1` + any extra `EXTRACT.PROFILE.1` /
+`PRIVACY.REDACTION.1` / `DIFF.1` — with `derived_view:true, creates_new_truth:false`. **A changed source
+casefile changes the report hash**; a downstream verifier fails on a source-sha mismatch
+(`NEG.BANK_RECONCILE.SOURCE_HASH_MISMATCH`). 
 
 An **opinionated generated operator view** that lets an operator read the banking evidence in one report —
 *Did this batch reconcile under the declared profile? What failed? What was refused? What should I not

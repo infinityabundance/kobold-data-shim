@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.0
+
+- **KOBOLD.BANK.RECONCILE.1 — source-casefile sha binding (the TRUST.5 follow-through).** The reconciliation
+  report now carries a `source_evidence` block pinning each source court casefile by sha256 (BANK.1/BANK.2 +
+  POSTING.1 + DB2HOST.1 + any extra EXTRACT.PROFILE.1/PRIVACY.REDACTION.1/DIFF.1), with `derived_view:true,
+  creates_new_truth:false`. A changed source casefile changes the report hash; +2 NEG.BANK_RECONCILE.SOURCE_
+  CASEFILE_REQUIRED/SOURCE_HASH_MISMATCH. **BREAKING (hence the minor):** `BankReconcileInputs` gains a
+  required `extra_sources: &[(&str, &str)]` field. tests/bank_reconcile.rs (+1: source binding + freshness).
+
 ## 0.6.6
 
 - **KOBOLD.TOOLING.EXPORT.1 — generated evidence export for downstream tools.** `tooling_export` maps each

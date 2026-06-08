@@ -10,6 +10,7 @@
 use crate::banking::BankingResult;
 use crate::db2host::Db2HostResult;
 use crate::posting::{PostingManifest, PostingProfile};
+use crate::sha256::sha256_hex;
 
 /// The existing-evidence inputs the view summarizes. Each is a court output, not a fresh computation.
 pub struct BankReconcileInputs<'a> {
@@ -21,6 +22,10 @@ pub struct BankReconcileInputs<'a> {
     pub tokenized_field_count: usize,
     pub dirty_count: usize,
     pub unsupported_count: usize,
+    /// Additional `(court_id, casefile_json)` source bindings — e.g. `KOBOLD.EXTRACT.PROFILE.1`,
+    /// `KOBOLD.PRIVACY.REDACTION.1`, `KOBOLD.DIFF.1` — pinned by sha256 in `source_evidence`. The view is
+    /// a **derived view** over these exact artifacts; if any changes, the report hash changes.
+    pub extra_sources: &'a [(&'a str, &'a str)],
 }
 
 /// The generated operator report (json + markdown + SARIF), all from the inputs above.
@@ -114,10 +119,35 @@ pub fn bank_reconcile_report(i: &BankReconcileInputs) -> BankReconcileReport {
         sarif_results.join(",")
     );
 
+    // Source-evidence binding: the view is provably DERIVED from these exact court casefiles (each pinned
+    // by sha256). If any source changes, its sha — and the report — changes; a downstream verifier compares
+    // these against the on-disk casefiles (NEG.BANK_RECONCILE.SOURCE_HASH_MISMATCH).
+    let src_entry = |court: &str, json: &str| {
+        format!(
+            "{{\"court\":{},\"path\":{},\"sha256\":{}}}",
+            jstr(court),
+            jstr(&format!("reports/casefiles/{court}/casefile.json")),
+            jstr(&sha256_hex(json.as_bytes()))
+        )
+    };
+    let mut sources = vec![
+        src_entry("KOBOLD.BANK.1", &i.banking.casefile_json),
+        src_entry("KOBOLD.BANK.2", &i.banking.casefile_json),
+        src_entry("KOBOLD.POSTING.1", &i.custody.casefile_json),
+    ];
+    if let Some(d) = i.db2 {
+        sources.push(src_entry("KOBOLD.DB2HOST.1", &d.casefile_json));
+    }
+    for (court, json) in i.extra_sources {
+        sources.push(src_entry(court, json));
+    }
+    let source_evidence = sources.join(",");
+
     let report_json = format!(
         concat!(
             "{{\"schema\":\"kobold-bank-reconcile-report-v1\",\"court\":\"KOBOLD.BANK.RECONCILE.1\",",
-            "\"view_only\":true,\"introduces_new_evidence\":false,",
+            "\"view_only\":true,\"derived_view\":true,\"introduces_new_evidence\":false,\"creates_new_truth\":false,",
+            "\"source_evidence\":[{}],",
             "\"batch\":{{\"posting_unit_id\":{},\"business_date\":{},\"extract_time_utc\":{},\"source_system\":{},\"file_hash\":{},\"last_chain_hash\":{}}},",
             "\"controls\":{{\"declared_count\":{},\"observed_count\":{},\"declared_debit\":{},\"observed_debit\":{},\"declared_credit\":{},\"observed_credit\":{},\"verdict\":{}}},",
             "\"custody\":{{\"sequence_min\":{},\"sequence_max\":{},\"sequence_gaps\":[{}],\"duplicate_sequences\":[{}],\"duplicate_transaction_ids\":[{}]}},",
@@ -127,8 +157,10 @@ pub fn bank_reconcile_report(i: &BankReconcileInputs) -> BankReconcileReport {
             "\"truth_layers\":{{\"record_truth\":true,\"posting_truth\":false,\"ledger_truth\":false,\"settlement_truth\":false,\"business_truth\":false}},",
             "\"negative_capabilities\":[\"NEG.BANK_RECONCILE.NOT_LEDGER_ACCEPTANCE\",\"NEG.BANK_RECONCILE.NOT_SETTLEMENT_FINALITY\",",
             "\"NEG.BANK_RECONCILE.NOT_ACCOUNT_BALANCE_TRUTH\",\"NEG.BANK_RECONCILE.NOT_BUSINESS_APPROVAL\",",
-            "\"NEG.BANK_RECONCILE.VIEW_NOT_NEW_EVIDENCE\",\"NEG.BANK_RECONCILE.MATCH_NOT_CORRECTNESS\"]}}\n"
+            "\"NEG.BANK_RECONCILE.VIEW_NOT_NEW_EVIDENCE\",\"NEG.BANK_RECONCILE.MATCH_NOT_CORRECTNESS\",",
+            "\"NEG.BANK_RECONCILE.SOURCE_CASEFILE_REQUIRED\",\"NEG.BANK_RECONCILE.SOURCE_HASH_MISMATCH\"]}}\n"
         ),
+        source_evidence,
         jstr(i.batch.posting_unit_id), jstr(i.batch.business_date), jstr(i.batch.extract_time_utc),
         jstr(i.batch.source_system), jstr(&i.custody.file_hash), jstr(&i.custody.last_chain_hash),
         opt_u(s.declared_count), s.observed_count, opt_cents(s.declared_debit_cents), jstr(&cents(s.observed_debit_cents)),

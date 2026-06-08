@@ -139,6 +139,7 @@ fn matched_view_is_faithful_and_refuses_truth() {
         tokenized_field_count: 1,
         dirty_count: 0,
         unsupported_count: 0,
+        extra_sources: &[],
     };
     let r = bank_reconcile_report(&inputs);
     // faithful to the court structs (no recomputation/drift)
@@ -195,9 +196,61 @@ fn mismatch_renders_finding_in_view_and_sarif() {
         tokenized_field_count: 0,
         dirty_count: 0,
         unsupported_count: 0,
+        extra_sources: &[],
     };
     let r = bank_reconcile_report(&inputs);
     assert!(r.report_json.contains("\"verdict\":\"mismatch\""));
     // the EXISTING banking finding surfaces in the aggregated SARIF (not a new finding)
     assert!(r.sarif_json.contains("KOBOLD-BANK-CONTROL-MISMATCH"));
+}
+
+#[test]
+fn source_evidence_binds_courts_and_changes_with_source() {
+    let (v, c) = specs();
+    let mut data = detail(b'D', "100.00");
+    data.extend(trailer(1, "100.00", "0.00"));
+    let bank = reconcile_banking(&data, 28, &v, &c, &NoCopy, Encoding::Ascii).unwrap();
+    let custody = posting_manifest(PCB, &seqbuf(3), 8, &pprof(), &NoCopy, Encoding::Ascii).unwrap();
+    let extra: [(&str, &str); 1] = [("KOBOLD.EXTRACT.PROFILE.1", "{\"schema\":\"x\"}")];
+    let inputs = BankReconcileInputs {
+        batch: &pprof(),
+        custody: &custody,
+        banking: &bank,
+        db2: None,
+        redacted_field_count: 0,
+        tokenized_field_count: 0,
+        dirty_count: 0,
+        unsupported_count: 0,
+        extra_sources: &extra,
+    };
+    let r = bank_reconcile_report(&inputs);
+    // provably derived from named, hash-pinned source casefiles
+    assert!(
+        r.report_json.contains("\"derived_view\":true")
+            && r.report_json.contains("\"creates_new_truth\":false")
+    );
+    assert!(r.report_json.contains(
+        "\"court\":\"KOBOLD.BANK.1\",\"path\":\"reports/casefiles/KOBOLD.BANK.1/casefile.json\""
+    ));
+    assert!(
+        r.report_json.contains("\"court\":\"KOBOLD.POSTING.1\"")
+            && r.report_json
+                .contains("\"court\":\"KOBOLD.EXTRACT.PROFILE.1\"")
+    );
+    assert!(r
+        .report_json
+        .contains("NEG.BANK_RECONCILE.SOURCE_HASH_MISMATCH"));
+    // a CHANGED source (different banking input) changes the report hash -> freshness is real
+    let mut data2 = detail(b'D', "999.99");
+    data2.extend(trailer(1, "999.99", "0.00"));
+    let bank2 = reconcile_banking(&data2, 28, &v, &c, &NoCopy, Encoding::Ascii).unwrap();
+    let inputs2 = BankReconcileInputs {
+        banking: &bank2,
+        ..inputs
+    };
+    let r2 = bank_reconcile_report(&inputs2);
+    assert_ne!(
+        r.report_json, r2.report_json,
+        "changed source casefile must change the report"
+    );
 }
