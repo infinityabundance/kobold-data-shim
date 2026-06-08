@@ -37,6 +37,7 @@ pub use extract::{
     RecordLengthSource,
 };
 pub use file::{ingest, ExitCode, Ingest, IngestPolicy, PartialRecord, TrailingNewline};
+pub use fixture::{replay_fixture, Fixture, FixtureOutcome, FixtureResult, FixtureVerdict};
 /// Re-exported so callers can implement a custom copybook search path for [`decode_with_resolver`].
 pub use gnucobol_rs::copybook::CopyResolver;
 use gnucobol_rs::pic::COB_TYPE_ALPHANUMERIC;
@@ -96,6 +97,7 @@ pub mod db2host;
 pub mod diff;
 pub mod extract;
 pub mod file;
+pub mod fixture;
 pub mod operator;
 pub mod posting;
 pub mod privacy;

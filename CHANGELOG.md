@@ -2,6 +2,12 @@
 
 ## 0.7.0
 
+- **NIST-STYLE-FIXTURE-FORMAT.1 — named replayable fixture format.** `kobold-fixture-v1` declares input
+  bytes + copybook/profile + expected verdict/findings/non-claims + input hashes; `replay_fixture` runs the
+  named court for real and compares actual-vs-expected (a wrong expectation fails). Negative fixtures are
+  first-class; a risk-bearing fixture without non-claims is rejected; `nist_conformance` is hard-false. +6
+  NEG.FIXTURE.*. tests/fixture.rs (4).
+
 - **KOBOLD.BANK.RECONCILE.1 — source-casefile sha binding (the TRUST.5 follow-through).** The reconciliation
   report now carries a `source_evidence` block pinning each source court casefile by sha256 (BANK.1/BANK.2 +
   POSTING.1 + DB2HOST.1 + any extra EXTRACT.PROFILE.1/PRIVACY.REDACTION.1/DIFF.1), with `derived_view:true,
