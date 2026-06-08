@@ -15,6 +15,15 @@
   partial trailing record or unexpected final newline is rejected, never silently absorbed. Stable
   documented exit codes (0 success / 1 evidence-warnings / 2 invalid-shape / 3 unsupported-surface /
   4 internal / 5 io-or-config). This is KOBOLD ingest reliability, NOT GnuCOBOL file I/O parity.
+- **KOBOLD.BANK.1 — banking header/detail/trailer court (declared-vs-observed control totals).** New
+  `banking` module: route fixed records by a **declared** discriminator (H/D/T) to per-variant copybooks,
+  then reconcile the trailer's **declared** control totals (count/debit/credit) against KOBOLD-**observed**
+  totals. Debit/credit polarity comes only from the **declared** DR/CR field, never a numeric sign. A
+  balanced file reconciles (exit 0); a tampered trailer fails with a `KOBOLD-BANK-CONTROL-MISMATCH`
+  finding (exit 1); an unknown record type fails closed. Emits a `kobold-banking-forensic-casefile-v1`
+  with truth LAYERS — byte/record truth proven, **posting/ledger/business truth explicitly unclaimed**.
+  Doctrine: a balanced file is not a correct file; a trailer match is not ledger acceptance. tests/
+  banking.rs (3) + recon/banking H/D/T corpus.
 
 ## [0.6.2]
 - **KOBOLD.DATA.5 — cp500 numeric DISPLAY composed.** EBCDIC zoned-decimal numeric DISPLAY fields now

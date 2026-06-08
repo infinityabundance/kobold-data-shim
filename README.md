@@ -118,6 +118,21 @@ Because the kernel is oracle-proven, a migration can ship **evidence**, not asse
 non-claims become part of the compliance package (SOX/audits). This shim adds the per-record audit
 trail (raw bytes + the court each value came from + any `unsupported` field).
 
+## Banking control totals (`KOBOLD.BANK.1`)
+
+Header/detail/trailer banking files, reconciled under a **declared** profile — *the court's job is to stop
+banking data being over-interpreted*:
+
+- route records by a declared discriminator (H/D/T) to per-variant copybooks; **unknown type fails closed**;
+- reconcile the trailer's **declared** control totals (count / debit / credit) against KOBOLD-**observed**
+  totals — a `KOBOLD-BANK-CONTROL-MISMATCH` finding (SARIF-shaped) on any discrepancy;
+- debit/credit polarity comes only from the **declared** DR/CR field, **never** a numeric sign.
+
+It emits a `kobold-banking-forensic-casefile-v1` with truth **layers**: byte truth and record truth are
+proven; **posting, ledger, and business truth are explicitly `claimed: false`** and require declared
+profiles. *A balanced file is not a correct file; a trailer match is not ledger acceptance.* The full
+banking refusal set is in the registry (`NEG.BANKING.*`).
+
 ## Fixed-record container ingest (`KOBOLD.FILE.1`)
 
 Before decoding fields, split a raw byte stream into records with **defensible offsets and failure
