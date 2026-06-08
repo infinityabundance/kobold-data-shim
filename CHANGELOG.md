@@ -11,11 +11,19 @@
 
 ## 0.7.0
 
+*(TOOLING.EXPORT.1 was briefly staged as 0.6.6; it shipped in 0.7.0 — 0.6.6 was never published.)*
+
 - **NIST-STYLE-FIXTURE-FORMAT.1 — named replayable fixture format.** `kobold-fixture-v1` declares input
   bytes + copybook/profile + expected verdict/findings/non-claims + input hashes; `replay_fixture` runs the
   named court for real and compares actual-vs-expected (a wrong expectation fails). Negative fixtures are
   first-class; a risk-bearing fixture without non-claims is rejected; `nist_conformance` is hard-false. +6
   NEG.FIXTURE.*. tests/fixture.rs (4).
+
+- **KOBOLD.TOOLING.EXPORT.1 — generated evidence export for downstream tools.** `tooling_export` maps each
+  decoded field to copybook provenance (path/line), PIC/USAGE, offset/length, decoded value OR redaction
+  status (no cleartext for a redacted field), `raw_sha256`, the sealed court ids that produced it, the
+  witness `dialect_profile_id`, and per-field non-claims. `introduces_new_evidence:false`; refuses to be an
+  LSP/IDE/parser/source-of-truth. +6 NEG.TOOLING.*. tests/tooling.rs (3).
 
 - **KOBOLD.BANK.RECONCILE.1 — source-casefile sha binding (the TRUST.5 follow-through).** The reconciliation
   report now carries a `source_evidence` block pinning each source court casefile by sha256 (BANK.1/BANK.2 +
@@ -23,14 +31,6 @@
   creates_new_truth:false`. A changed source casefile changes the report hash; +2 NEG.BANK_RECONCILE.SOURCE_
   CASEFILE_REQUIRED/SOURCE_HASH_MISMATCH. **BREAKING (hence the minor):** `BankReconcileInputs` gains a
   required `extra_sources: &[(&str, &str)]` field. tests/bank_reconcile.rs (+1: source binding + freshness).
-
-## 0.6.6
-
-- **KOBOLD.TOOLING.EXPORT.1 — generated evidence export for downstream tools.** `tooling_export` maps each
-  decoded field to copybook provenance (path/line), PIC/USAGE, offset/length, decoded value OR redaction
-  status (no cleartext for a redacted field), `raw_sha256`, the sealed court ids that produced it, the
-  witness `dialect_profile_id`, and per-field non-claims. `introduces_new_evidence:false`; refuses to be an
-  LSP/IDE/parser/source-of-truth. +6 NEG.TOOLING.*. tests/tooling.rs (3).
 
 ## 0.6.5
 
