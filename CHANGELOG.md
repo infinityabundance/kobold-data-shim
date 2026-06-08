@@ -39,6 +39,13 @@
   `db2_host` audit block + a casefile keeping `byte_truth`/`record_truth` separate from `database_truth`
   (`claimed:false`). NOT SQL execution / precompiler / SQLCA / DBRM-package / database truth. tests/
   db2host.rs (5).
+- **KOBOLD.RECON.2 — declared transformed-record reconciliation.** A named **sealed** transform
+  (`SET 88 TRUE` = GNURUST.12, `ADD`/`SUBTRACT` = GNURUST.7) takes input bytes → output bytes; both
+  decode; an audit delta is produced; replay is byte-stable. Casefile splits truth layers — `read_truth`
+  + `transform_truth` (scope: declared sealed transform only) claimed; **`write_back_truth` /
+  `posting_truth` / `ledger_truth` / `business_truth` claimed:false**. Undeclared targets fail closed;
+  nothing outside the declared field is touched. NOT Procedure Division / production write-back / file
+  rewrite parity / ledger acceptance / business truth. tests/recon2.rs (4).
 
 ## [0.6.2]
 - **KOBOLD.DATA.5 — cp500 numeric DISPLAY composed.** EBCDIC zoned-decimal numeric DISPLAY fields now

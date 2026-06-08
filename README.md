@@ -140,6 +140,21 @@ proven; **posting, ledger, and business truth are explicitly `claimed: false`** 
 profiles. *A balanced file is not a correct file; a trailer match is not ledger acceptance.* The full
 banking refusal set is in the registry (`NEG.BANKING.*`).
 
+## Transformed-record reconciliation (`KOBOLD.RECON.2`)
+
+A **declared** transform — a *named sealed court* — takes input bytes to output bytes, and both states
+decode and audit:
+
+```
+input record ─► declared transform (SET 88 TRUE / ADD / SUBTRACT) ─► output record ─► before/after decode + audit delta
+```
+
+`reconcile_transform` proves only **read truth** and **transform truth** (`scope: declared sealed
+transform only`); **write-back, posting, ledger, and business truth stay `claimed: false`**. Undeclared
+targets fail closed, and nothing outside the declared field is touched. *Read truth ≠ transform truth ≠
+write-back truth ≠ business truth* — this is reconciliation evidence, **not** production write-back, file
+rewrite parity, or Procedure Division execution.
+
 ## Db2 host-variable null indicators (`KOBOLD.DB2HOST.1`)
 
 A field can decode perfectly and still be **semantically NULL** at the database boundary. This court
