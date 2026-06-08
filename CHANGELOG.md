@@ -70,6 +70,12 @@
   copybook provenance, and court identity. Unlisted fields **fail closed** under `deny_unlisted`;
   `public_output_claim:false`. +7 NEG.PRIVACY.*/NEG.REDACTION.*. tests/privacy.rs (3). NOT anonymization /
   regulatory compliance / reversibility / safe public release.
+- **KOBOLD.PERF.1 — gated record-level Rayon (off by default).** New `reconcile_encoded_parallel` behind
+  the `rayon` feature decodes records in parallel while emitting **byte-identical** evidence to scalar
+  `reconcile_encoded` (same JSONL/audit/unsupported/`decode_output_sha256` + downstream posting chain).
+  Internally `reconcile` now parses the program ONCE and decodes per-record from the shared layout (also
+  faster scalar; output unchanged — all sealed goldens still pass). tests/perf1.rs proves scalar==rayon.
+  No semantic change; no production/AWS/SIMD/parallel-throughput claim.
 
 ## [0.6.2]
 - **KOBOLD.DATA.5 — cp500 numeric DISPLAY composed.** EBCDIC zoned-decimal numeric DISPLAY fields now

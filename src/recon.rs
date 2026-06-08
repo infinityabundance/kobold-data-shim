@@ -79,6 +79,55 @@ pub fn reconcile_encoded(
     resolver: &impl CopyResolver,
     encoding: crate::Encoding,
 ) -> Result<ReconResult, ShimError> {
+    reconcile_impl(
+        fixture,
+        copybook,
+        data,
+        record_len,
+        gnucobol_rs_version,
+        resolver,
+        encoding,
+        false,
+    )
+}
+
+/// `reconcile_encoded` with optional **record-level Rayon** parallelism (`KOBOLD.PERF.1`, `rayon`
+/// feature). Output is **byte-identical** to [`reconcile_encoded`] — same JSONL, audit, unsupported
+/// ledger, and hashes (order-preserving). Performance is a derived property of preserved evidence.
+#[cfg(feature = "rayon")]
+#[allow(clippy::too_many_arguments)]
+pub fn reconcile_encoded_parallel(
+    fixture: &str,
+    copybook: &str,
+    data: &[u8],
+    record_len: usize,
+    gnucobol_rs_version: &str,
+    resolver: &(impl CopyResolver + Sync),
+    encoding: crate::Encoding,
+) -> Result<ReconResult, ShimError> {
+    reconcile_impl(
+        fixture,
+        copybook,
+        data,
+        record_len,
+        gnucobol_rs_version,
+        resolver,
+        encoding,
+        true,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn reconcile_impl(
+    fixture: &str,
+    copybook: &str,
+    data: &[u8],
+    record_len: usize,
+    gnucobol_rs_version: &str,
+    resolver: &impl CopyResolver,
+    encoding: crate::Encoding,
+    parallel: bool,
+) -> Result<ReconResult, ShimError> {
     if record_len == 0 {
         return Err(ShimError::Layout("record_len must be > 0".into()));
     }
@@ -113,102 +162,38 @@ pub fn reconcile_encoded(
         ""
     };
 
-    let mut jsonl = String::new();
-    let mut unsupported_items: Vec<String> = Vec::new();
-    let mut record_count = 0usize;
+    // Parse the program ONCE (the COPY resolver is used only here, sequentially); per-record decode then
+    // reuses the shared layout -- faster than re-parsing per record, and the parallel path captures only
+    // the Sync `Program` (no resolver), so record-level Rayon needs no extra bound on the public API.
+    let prog = crate::parse_program(copybook, resolver)?;
+    let chunks: Vec<&[u8]> = data.chunks(record_len).collect();
+    let record_count = chunks.len();
+    // The layout is identical for every record; sign it once (from the first record) for the audit.
+    let mut layout_sig = String::new();
     let mut field_count = 0usize;
     let mut condition_count = 0usize;
-    let mut unsupported_count = 0usize;
-    let mut layout_sig = String::new();
+    if let Some(first) = chunks.first() {
+        let fields0 = crate::decode_fields(&prog, first, encoding);
+        for f in &fields0 {
+            layout_sig.push_str(&format!("{}:{}:{};", f.name, f.offset, f.size));
+        }
+        field_count = fields0.iter().filter(|f| f.category != "group").count();
+        condition_count = crate::eval_conditions(&prog, first, encoding).len();
+    }
 
-    for (index, chunk) in data.chunks(record_len).enumerate() {
-        record_count += 1;
-        let rec = crate::decode_record_encoded(copybook, chunk, resolver, encoding)?;
-        if index == 0 {
-            // The layout is identical for every record; sign it once for the audit.
-            for f in &rec.fields {
-                layout_sig.push_str(&format!("{}:{}:{};", f.name, f.offset, f.size));
-            }
-            field_count = rec.fields.iter().filter(|f| f.category != "group").count();
-            condition_count = rec.conditions.len();
-        }
-
-        let mut obj = format!("{{\"record_index\":{index},\"fields\":{{");
-        let mut first = true;
-        // Edited fields keep their PRESENTATION string in `fields`; the oracle-proven numeric goes to
-        // the per-record audit `edited` block (KOBOLD.DATA.4) — never a silent replacement.
-        let mut edited_block = String::new();
-        let mut efirst = true;
-        for f in &rec.fields {
-            match f.category {
-                "numeric" | "alphanumeric" | "edited" => {
-                    if !first {
-                        obj.push(',');
-                    }
-                    first = false;
-                    obj.push_str(&format!("{}:{}", jstr(&f.name), jstr(&f.value)));
-                    if f.category == "edited" {
-                        if !efirst {
-                            edited_block.push(',');
-                        }
-                        efirst = false;
-                        let num = f
-                            .edited_numeric
-                            .as_deref()
-                            .map(jstr)
-                            .unwrap_or_else(|| "null".to_string());
-                        edited_block.push_str(&format!(
-                            "{}:{{\"raw_text\":{},\"numeric_value\":{},\"claim\":\"GNURUST.16\",\"domain\":\"edited-display-decode\"}}",
-                            jstr(&f.name),
-                            jstr(&f.value),
-                            num
-                        ));
-                    }
-                }
-                "unsupported" => {
-                    if index == 0 {
-                        unsupported_items.push(format!("field:{}", f.name));
-                    }
-                    unsupported_count += 1;
-                }
-                _ => {} // group: not a value field
-            }
-        }
-        obj.push_str("},\"conditions\":{");
-        let mut cfirst = true;
-        for c in &rec.conditions {
-            match c.value {
-                Some(b) => {
-                    if !cfirst {
-                        obj.push(',');
-                    }
-                    cfirst = false;
-                    obj.push_str(&format!("{}:{}", jstr(&c.name), b));
-                }
-                None => {
-                    if index == 0 {
-                        unsupported_items.push(format!("condition:{}", c.name));
-                    }
-                    unsupported_count += 1;
-                }
-            }
-        }
-        let rec_sha = sha256_hex(chunk);
-        let edited_audit = if edited_block.is_empty() {
-            String::new()
-        } else {
-            format!(",\"edited\":{{{edited_block}}}")
-        };
-        obj.push_str(&format!(
-            "}},\"audit\":{{\"raw_offset\":{},\"raw_len\":{},\"record_sha256\":{}{}}}}}",
-            index * record_len,
-            chunk.len(),
-            jstr(&rec_sha),
-            edited_audit
-        ));
-        jsonl.push_str(&obj);
+    // Per-record JSON objects, in record ORDER. Scalar by default; record-level Rayon under the `rayon`
+    // feature (`KOBOLD.PERF.1`) — order-preserving `collect`, so the assembled JSONL/audit is byte-identical.
+    let objects = build_objects(&prog, &chunks, record_len, encoding, parallel);
+    let mut jsonl = String::new();
+    for (obj, _, _) in &objects {
+        jsonl.push_str(obj);
         jsonl.push('\n');
     }
+    let unsupported_count: usize = objects.iter().map(|(_, c, _)| *c).sum();
+    let unsupported_items: Vec<String> = objects
+        .first()
+        .map(|(_, _, n)| n.clone())
+        .unwrap_or_default();
 
     let mut unsupported_json = String::from("{\"unsupported\":[");
     for (i, u) in unsupported_items.iter().enumerate() {
@@ -263,4 +248,114 @@ pub fn reconcile_encoded(
         record_count,
         unsupported_count,
     })
+}
+
+/// Build one record's JSON object + its `(unsupported_count, unsupported_names)` — the per-record work,
+/// shared by the scalar and Rayon paths so both emit byte-identical evidence.
+fn record_object(
+    fields: &[crate::DecodedField],
+    conditions: &[crate::DecodedCondition],
+    index: usize,
+    record_len: usize,
+    chunk: &[u8],
+) -> (String, usize, Vec<String>) {
+    let mut obj = format!("{{\"record_index\":{index},\"fields\":{{");
+    let mut first = true;
+    let mut edited_block = String::new();
+    let mut efirst = true;
+    let mut unsupported_count = 0usize;
+    let mut unsupported_names: Vec<String> = Vec::new();
+    for f in fields {
+        match f.category {
+            "numeric" | "alphanumeric" | "edited" => {
+                if !first {
+                    obj.push(',');
+                }
+                first = false;
+                obj.push_str(&format!("{}:{}", jstr(&f.name), jstr(&f.value)));
+                if f.category == "edited" {
+                    if !efirst {
+                        edited_block.push(',');
+                    }
+                    efirst = false;
+                    let num = f
+                        .edited_numeric
+                        .as_deref()
+                        .map(jstr)
+                        .unwrap_or_else(|| "null".to_string());
+                    edited_block.push_str(&format!(
+                        "{}:{{\"raw_text\":{},\"numeric_value\":{},\"claim\":\"GNURUST.16\",\"domain\":\"edited-display-decode\"}}",
+                        jstr(&f.name),
+                        jstr(&f.value),
+                        num
+                    ));
+                }
+            }
+            "unsupported" => {
+                unsupported_names.push(format!("field:{}", f.name));
+                unsupported_count += 1;
+            }
+            _ => {}
+        }
+    }
+    obj.push_str("},\"conditions\":{");
+    let mut cfirst = true;
+    for c in conditions {
+        match c.value {
+            Some(b) => {
+                if !cfirst {
+                    obj.push(',');
+                }
+                cfirst = false;
+                obj.push_str(&format!("{}:{}", jstr(&c.name), b));
+            }
+            None => {
+                unsupported_names.push(format!("condition:{}", c.name));
+                unsupported_count += 1;
+            }
+        }
+    }
+    let rec_sha = sha256_hex(chunk);
+    let edited_audit = if edited_block.is_empty() {
+        String::new()
+    } else {
+        format!(",\"edited\":{{{edited_block}}}")
+    };
+    obj.push_str(&format!(
+        "}},\"audit\":{{\"raw_offset\":{},\"raw_len\":{},\"record_sha256\":{}{}}}}}",
+        index * record_len,
+        chunk.len(),
+        jstr(&rec_sha),
+        edited_audit
+    ));
+    (obj, unsupported_count, unsupported_names)
+}
+
+/// Decode + build all record objects in record ORDER. Scalar by default; record-level Rayon under the
+/// `rayon` feature (`KOBOLD.PERF.1`). The parallel path captures only the `Sync` `Program` and uses an
+/// order-preserving `collect`, so the result is byte-identical to scalar.
+fn build_objects(
+    prog: &crate::Program,
+    chunks: &[&[u8]],
+    record_len: usize,
+    encoding: crate::Encoding,
+    parallel: bool,
+) -> Vec<(String, usize, Vec<String>)> {
+    let one = |index: usize, chunk: &[u8]| {
+        let fields = crate::decode_fields(prog, chunk, encoding);
+        let conditions = crate::eval_conditions(prog, chunk, encoding);
+        record_object(&fields, &conditions, index, record_len, chunk)
+    };
+    if parallel {
+        #[cfg(feature = "rayon")]
+        {
+            use rayon::prelude::*;
+            return chunks
+                .par_iter()
+                .enumerate()
+                .map(|(i, c)| one(i, c))
+                .collect();
+        }
+    }
+    chunks.iter().enumerate().map(|(i, c)| one(i, c)).collect()
 }

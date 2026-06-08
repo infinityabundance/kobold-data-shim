@@ -140,6 +140,15 @@ proven; **posting, ledger, and business truth are explicitly `claimed: false`** 
 profiles. *A balanced file is not a correct file; a trailer match is not ledger acceptance.* The full
 banking refusal set is in the registry (`NEG.BANKING.*`).
 
+## Gated parallelism (`KOBOLD.PERF.1`)
+
+`reconcile_encoded_parallel` (behind the **off-by-default `rayon` feature**) decodes records with
+record-level Rayon, emitting **byte-identical** evidence to scalar [`reconcile_encoded`] — same JSONL,
+audit, unsupported ledger, `decode_output_sha256`, and downstream posting hash chain. The program is
+parsed once and the parallel path captures only the `Sync` layout (no resolver), with an order-preserving
+`collect`. *Performance is a derived property of preserved evidence, not a separate semantic authority* —
+proven in `tests/perf1.rs` (scalar == rayon across n=1…999).
+
 ## Evidence-preserving redaction (`KOBOLD.PRIVACY.REDACTION.1`)
 
 Before real files enter the pipeline, privacy is a **court**, not a footnote. `redact_record` applies a
