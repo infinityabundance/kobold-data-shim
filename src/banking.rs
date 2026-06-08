@@ -94,12 +94,29 @@ pub struct ControlSpec<'a> {
 }
 
 /// The banking reconciliation outcome.
+#[non_exhaustive]
 pub struct BankingResult {
     pub casefile_json: String,
     pub balanced: bool,
     pub verdict: ExitCode,
     /// SARIF-shaped findings (rule id + message) — non-empty iff the file did not reconcile.
     pub findings: Vec<(String, String)>,
+    /// Structured declared-vs-observed numbers (so downstream views read values, not re-parsed JSON).
+    pub summary: BankingSummary,
+}
+
+/// The declared-vs-observed control numbers, exposed structurally for `BANK.RECONCILE.1`'s operator view.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[non_exhaustive]
+pub struct BankingSummary {
+    pub declared_count: Option<u64>,
+    pub observed_count: u64,
+    pub declared_debit_cents: Option<i64>,
+    pub observed_debit_cents: i64,
+    pub declared_credit_cents: Option<i64>,
+    pub observed_credit_cents: i64,
+    pub unknown_record_type_count: usize,
+    pub unknown_polarity_count: usize,
 }
 
 fn jstr(s: &str) -> String {
@@ -352,11 +369,28 @@ pub fn reconcile_banking(
         verdict.code(),
     );
 
+    let summary = BankingSummary {
+        declared_count: decl_count,
+        observed_count: obs_count,
+        declared_debit_cents: decl_debit,
+        observed_debit_cents: obs_debit,
+        declared_credit_cents: decl_credit,
+        observed_credit_cents: obs_credit,
+        unknown_record_type_count: findings
+            .iter()
+            .filter(|(r, _)| r == "KOBOLD-BANK-UNKNOWN-RECORD-TYPE")
+            .count(),
+        unknown_polarity_count: findings
+            .iter()
+            .filter(|(r, _)| r == "KOBOLD-BANK-UNKNOWN-POLARITY")
+            .count(),
+    };
     Ok(BankingResult {
         casefile_json,
         balanced,
         verdict,
         findings,
+        summary,
     })
 }
 

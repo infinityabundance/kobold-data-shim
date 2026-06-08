@@ -76,6 +76,13 @@
   Internally `reconcile` now parses the program ONCE and decodes per-record from the shared layout (also
   faster scalar; output unchanged — all sealed goldens still pass). tests/perf1.rs proves scalar==rayon.
   No semantic change; no production/AWS/SIMD/parallel-throughput claim.
+- **KOBOLD.BANK.RECONCILE.1 — opinionated generated banking reconciliation VIEW.** `bank_reconcile_report`
+  assembles an operator report (json + md + SARIF) **only from existing court structs** (BANK.1/2 summary,
+  POSTING.1 custody, DB2HOST.1, PRIVACY counts) — declared-vs-observed count/debit/credit + matched/mismatch
+  verdict, custody seq min/max/gaps/dups + last_chain_hash, DB2 null/truncation, dirty/unsupported counts,
+  redaction counts, refused truth layers; aggregates the EXISTING findings into one SARIF. Introduces no new
+  evidence; a VIEW, not a new truth source. `BankingResult` gains a structured `summary`; `PostingManifest`
+  gains `seq_min/seq_max/file_hash` (both now `#[non_exhaustive]`). +6 NEG.BANK_RECONCILE.*. tests/bank_reconcile.rs (2).
 
 ## [0.6.2]
 - **KOBOLD.DATA.5 — cp500 numeric DISPLAY composed.** EBCDIC zoned-decimal numeric DISPLAY fields now

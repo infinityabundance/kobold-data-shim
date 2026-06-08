@@ -24,7 +24,10 @@
 use gnucobol_rs::copybook::expand;
 use gnucobol_rs::layout::{lay_out, Item, Odo};
 
-pub use banking::{reconcile_banking, BankingResult, ControlSpec, Variant, VariantSpec};
+pub use bank_reconcile::{bank_reconcile_report, BankReconcileInputs, BankReconcileReport};
+pub use banking::{
+    reconcile_banking, BankingResult, BankingSummary, ControlSpec, Variant, VariantSpec,
+};
 pub use db2host::{db2host_evaluate, Db2HostResult, IndicatorManifest, IndicatorPair, NullState};
 pub use extract::{
     extract_manifest, ExtractManifest, ExtractMethod, ExtractProfile, FileOrganization,
@@ -79,6 +82,7 @@ fn logical_bytes<'a>(
 }
 use std::collections::HashMap;
 
+pub mod bank_reconcile;
 pub mod banking;
 pub mod db2host;
 pub mod extract;

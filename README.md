@@ -168,6 +168,18 @@ uncertainty** (`copybook_freshness: {claimed:false, risk: "a stale copybook may 
 wrong"}`). *KOBOLD proves decoded extracted bytes — not that the extraction or the copybook is production
 truth.*
 
+## Banking reconciliation view (`KOBOLD.BANK.RECONCILE.1`)
+
+An **opinionated generated operator view** that lets an operator read the banking evidence in one report —
+*Did this batch reconcile under the declared profile? What failed? What was refused? What should I not
+conclude?* `bank_reconcile_report` assembles **only from existing court structs** (BANK.1/2 summary,
+POSTING.1 custody, DB2HOST.1 indicators, PRIVACY redaction counts): declared-vs-observed count/debit/credit
++ matched/mismatch verdict, sequence min/max/gaps/duplicates + `last_chain_hash`, DB2 null/truncation
+counts, dirty/unsupported counts, redaction counts, and the **refused truth layers** — emitting json + md +
+an aggregated SARIF of the *existing* findings. It **introduces no new evidence** (`introduces_new_evidence:
+false`) and a match proves equality to the **declared** totals, *not* posting, ledger, settlement,
+account-balance, or business truth.
+
 ## Posting-unit custody (`KOBOLD.POSTING.1`)
 
 A **declared** posting-unit manifest binds the banking spine into one custody record — *which exact

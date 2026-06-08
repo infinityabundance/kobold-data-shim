@@ -25,13 +25,17 @@ pub struct PostingProfile<'a> {
 }
 
 /// The posting-unit custody result.
+#[non_exhaustive]
 pub struct PostingManifest {
     pub manifest_json: String,
     pub casefile_json: String,
     pub record_count: usize,
+    pub seq_min: Option<u64>,
+    pub seq_max: Option<u64>,
     pub seq_duplicates: Vec<u64>,
     pub seq_gaps: Vec<u64>,
     pub txn_duplicates: Vec<String>,
+    pub file_hash: String,
     pub last_chain_hash: String,
     pub findings: Vec<(String, String)>,
 }
@@ -251,9 +255,12 @@ pub fn posting_manifest(
         manifest_json,
         casefile_json,
         record_count: count,
+        seq_min: smin,
+        seq_max: smax,
         seq_duplicates,
         seq_gaps,
         txn_duplicates,
+        file_hash: sha256_hex(data),
         last_chain_hash: chain,
         findings,
     })
