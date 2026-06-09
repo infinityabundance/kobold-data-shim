@@ -109,6 +109,7 @@ pub mod redefines;
 pub mod sentinel;
 pub mod sha256;
 pub mod tooling;
+pub mod variant;
 pub use operator::{control_totals, explain_field, DirtyMode, STALE_COPYBOOK_RISK};
 
 /// A decoded elementary field.

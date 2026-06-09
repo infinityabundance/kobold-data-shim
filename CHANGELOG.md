@@ -1,5 +1,14 @@
 ## Unreleased
 
+- **KOBOLD.VARIANT.1 — header/detail/trailer record-discriminator routing.** `variant::variant_route` routes
+  each record of a multi-record-type flat file to a **declared** layout by a discriminator-field value and
+  decodes it under that layout (composing the sealed decode courts). A record whose discriminator matches **no
+  declared type is REFUSED** (`matched:false`, no decode) — never guessed onto a layout. The manifest records
+  per-record routing + decode, per-type counts, and a file/record sha; the casefile pins `routing_truth` +
+  `byte_view_truth` true while `control_total_truth` / `record_order_truth` / `business_meaning` are false.
+  Proves *which declared type each record selects and its decode* — not type inference, header/trailer control
+  totals, record-order rules, or record-stream business meaning. +6 NEG.VARIANT.*. src/variant.rs (2 tests).
+
 - **KOBOLD.PILOT.RUN.1 — `kobold-pilot` redacted pilot runner.** A new bin runs the full pilot chain over a
   declared extract and writes a redacted, hash-bound evidence packet to disk (extract / redaction.jsonl /
   bank-reconcile / diff / tooling-export / pilot-packet). Sensitive fields are tokenized before any artifact
