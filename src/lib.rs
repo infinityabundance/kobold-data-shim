@@ -92,6 +92,7 @@ use std::collections::HashMap;
 
 pub mod bank_reconcile;
 pub mod banking;
+pub mod batch_control;
 pub mod currency;
 pub mod date_profile;
 pub mod db2host;

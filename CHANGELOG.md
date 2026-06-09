@@ -1,5 +1,14 @@
 ## Unreleased
 
+- **KOBOLD.BATCH.CONTROL.1 — header/trailer control-total validation.** `batch_control::batch_control` decodes
+  a trailer's declared **record count** and **control total** and compares them to the **observed** detail
+  count and the **observed** sum of a declared amount field (composing the sealed decode courts; decimal sum
+  is exact, scale-aligned). Reports `count_match` / `total_match` as **evidence**: the manifest carries
+  declared-vs-observed count + total, the casefile pins `control_field_truth` true and `reconciliation_truth`
+  only when both agree, with `batch_correctness` / `settlement_truth` / `business_meaning` false. A match is
+  not batch correctness; a mismatch is **evidence of a discrepancy, not its cause**. Pairs with VARIANT.1
+  (route header/detail/trailer, then validate the trailer). +6 NEG.BATCH_CONTROL.*. src/batch_control.rs (2).
+
 - **KOBOLD.VARIANT.1 — header/detail/trailer record-discriminator routing.** `variant::variant_route` routes
   each record of a multi-record-type flat file to a **declared** layout by a discriminator-field value and
   decodes it under that layout (composing the sealed decode courts). A record whose discriminator matches **no

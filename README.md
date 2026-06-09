@@ -2,7 +2,7 @@
 
 <img src="assets/kobold_data_shim.png" width="200">
 
-[![crates.io](https://img.shields.io/crates/v/kobold-data-shim.svg)](https://crates.io/crates/kobold-data-shim) [![docs.rs](https://img.shields.io/docsrs/kobold-data-shim)](https://docs.rs/kobold-data-shim) ![license](https://img.shields.io/badge/license-Apache--2.0-blue) ![kernel](https://img.shields.io/badge/kernel-gnucobol--rs_(oracle--proven)-orange) ![courts](https://img.shields.io/badge/KOBOLD_courts-24-brightgreen) ![fail](https://img.shields.io/badge/unsupported-fails_closed-success)
+[![crates.io](https://img.shields.io/crates/v/kobold-data-shim.svg)](https://crates.io/crates/kobold-data-shim) [![docs.rs](https://img.shields.io/docsrs/kobold-data-shim)](https://docs.rs/kobold-data-shim) ![license](https://img.shields.io/badge/license-Apache--2.0-blue) ![kernel](https://img.shields.io/badge/kernel-gnucobol--rs_(oracle--proven)-orange) ![courts](https://img.shields.io/badge/KOBOLD_courts-25-brightgreen) ![fail](https://img.shields.io/badge/unsupported-fails_closed-success)
 
 **A verifiable COBOL record-decoding shim for data-migration pipelines.** Give it a copybook and a
 raw record dump; it tells you — byte-exactly — *what that COBOL record actually meant*, by composing
@@ -29,6 +29,7 @@ guessed — the reconciliation signal that real migrations need.
 | `DIFF.1` | structural diff vs a **declared** expected artifact | oracle authority · business truth · match ≠ correctness |
 | `LAYOUT.REDEFINES.2` | overlapping REDEFINES **byte views** + declared active view | which view is active (unless declared) · layout-valid ≠ business meaning |
 | `VARIANT.1` | header/detail/trailer **discriminator routing** → declared-layout decode | type inference · control totals · record order · business meaning |
+| `BATCH.CONTROL.1` | declared trailer **count + control total** vs observed detail count/sum | batch correctness · settlement · match ≠ business truth · cause of a mismatch |
 | `SENTINEL.PROFILE.1` | declared sentinel markers (LOW/HIGH/SPACES/zero-date…) as **evidence** | null · date · missing · business status · undeclared inference |
 | `DATE.PROFILE.1` | declared date format (YYYYMMDD/YYDDD) validation | PIC≠date · zero/high≠null/max · Y2K window · date arithmetic |
 | `CURRENCY.PROFILE.1` | declared amount scale + currency-code **evidence** | V99≠money · code≠legal tender · FX · rounding · sign≠polarity · rate≠amount |
