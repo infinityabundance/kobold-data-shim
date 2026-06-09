@@ -1,5 +1,9 @@
 ## Unreleased
 
+# Changelog
+
+## 0.7.2
+
 - **KOBOLD.BATCH.CHAIN.1 — tamper-evident batch custody chain.** `batch_chain::seal_chain` / `verify_chain`
   seal each batch run into a custody **link** whose sha256 binds its declared artifact hashes (input file,
   control result, output) **and its predecessor's link hash**, forming a chain. `verify_chain` recomputes
@@ -41,8 +45,6 @@
   evidence custody (account id tokenized before any artifact leaves the secure zone; no cleartext anywhere;
   packet hash-binds the chain). Synthetic bytes only — not customer-data coverage / production readiness /
   compliance / business acceptance. +6 NEG.PILOT_WORKFLOW.*. No API change (integration test + court entry).
-
-# Changelog
 
 ## 0.7.1
 
