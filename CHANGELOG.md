@@ -1,5 +1,14 @@
 ## Unreleased
 
+- **KOBOLD.BATCH.CHAIN.1 — tamper-evident batch custody chain.** `batch_chain::seal_chain` / `verify_chain`
+  seal each batch run into a custody **link** whose sha256 binds its declared artifact hashes (input file,
+  control result, output) **and its predecessor's link hash**, forming a chain. `verify_chain` recomputes
+  every link and checks predecessor continuity: altering any bound artifact, dropping a batch, or reordering
+  the sequence breaks the chain at a reported index. The casefile pins `custody_integrity_truth` + `order_truth`
+  true while `authenticity` / `batch_correctness` / `authorization` are false — tamper-**evident**, not
+  tamper-proof; it proves bound bytes unchanged + order intact, not that inputs are authentic or authorized. A
+  chain can be extended from an existing head. +6 NEG.BATCH_CHAIN.*. src/batch_chain.rs (4 tests).
+
 - **KOBOLD.BATCH.CONTROL.1 — header/trailer control-total validation.** `batch_control::batch_control` decodes
   a trailer's declared **record count** and **control total** and compares them to the **observed** detail
   count and the **observed** sum of a declared amount field (composing the sealed decode courts; decimal sum
