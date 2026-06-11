@@ -388,6 +388,7 @@ fn condition_set_round_trips() {
         let cond = Condition {
             name: "C".into(),
             values,
+            false_value: None,
         };
         let bytes = set_88_true(&pf.attr, pf.size, &cond).unwrap();
         assert_eq!(

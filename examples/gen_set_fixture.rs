@@ -69,6 +69,7 @@ fn main() {
         let cond = Condition {
             name: name.to_string(),
             values: values.clone(),
+            false_value: None,
         };
         let bytes = set_88_true(&pf.attr, pf.size, &cond).expect("set_88_true");
         let ok = eval_88(&pf.attr, &bytes, &cond) == Ok(true);

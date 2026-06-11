@@ -419,6 +419,7 @@ fn parse_program(copybook: &str, resolver: &impl CopyResolver) -> Result<Program
                     Condition {
                         name: cname,
                         values,
+                        false_value: None,
                     },
                 ));
             }
