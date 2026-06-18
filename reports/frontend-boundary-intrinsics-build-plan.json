@@ -1,0 +1,285 @@
+{
+ "schema": "kobold-frontend-intrinsic-build-plan-v1",
+ "note": "COBOL intrinsic FUNCTIONs that gnucobol-rs's front-end does NOT wire because they fall outside the oracle-first byte-identity subset. gnucobol-rs wires 77/110 intrinsics, each proven byte-identical to the admitted GnuCOBOL 3.2 cobc; these 33 are the boundary. Recorded as a build plan for a SEPARATE kobold-side layer that may implement them with its own conformance model (not the GnuCOBOL 3.2 byte oracle). DATA ONLY: no gnucobol/libcob GPL source is included. Companion to frontend-boundary-verbs-build-plan.json.",
+ "source": "gnucobol-rs COBOL-PARITY.md intrinsic census -- 77/110 wired + proven byte-identical, 33 boundary (these).",
+ "boundary": "gnucobol-rs's bar is byte-identity with GnuCOBOL 3.2 cobc. These 33 have no fixed cobc output to match -- libcob leaves some unimplemented, others return live program/host/locale state or non-deterministic values, and a few are libcob-internal helpers cobc rejects as user functions. Implementing them is therefore a non-oracle effort that belongs OUTSIDE the faithful port.",
+ "count": 33,
+ "categories": {
+  "runtime_unimplemented": [
+   "BOOLEAN-OF-INTEGER",
+   "INTEGER-OF-BOOLEAN",
+   "STANDARD-COMPARE",
+   "DISPLAY-OF",
+   "NATIONAL-OF",
+   "CHAR-NATIONAL"
+  ],
+  "program_state": [
+   "MODULE-ID",
+   "MODULE-SOURCE",
+   "MODULE-CALLER-ID",
+   "MODULE-PATH",
+   "MODULE-DATE",
+   "MODULE-FORMATTED-DATE",
+   "MODULE-TIME",
+   "EXCEPTION-FILE",
+   "EXCEPTION-FILE-N",
+   "EXCEPTION-LOCATION",
+   "EXCEPTION-LOCATION-N",
+   "EXCEPTION-STATEMENT",
+   "EXCEPTION-STATUS",
+   "CONTENT-OF",
+   "CONTENT-LENGTH"
+  ],
+  "nondeterministic": [
+   "RANDOM",
+   "SECONDS-PAST-MIDNIGHT",
+   "WHEN-COMPILED"
+  ],
+  "locale_dependent": [
+   "LOCALE-DATE",
+   "LOCALE-TIME",
+   "LOCALE-COMPARE",
+   "LCL-TIME-FROM-SECS"
+  ],
+  "not_a_user_function": [
+   "BINOP",
+   "NUM-DECIMAL-POINT",
+   "NUM-THOUSANDS-SEP",
+   "MON-DECIMAL-POINT",
+   "MON-THOUSANDS-SEP"
+  ]
+ },
+ "functions": [
+  {
+   "function": "BOOLEAN-OF-INTEGER",
+   "category": "runtime_unimplemented",
+   "why_boundary_in_gnucobol_rs": "libcob itself does not implement it in GnuCOBOL 3.2 -- the ported cob_intr_* is an error_not_implemented stub mirroring the oracle, so there is no runtime behaviour to reproduce",
+   "build_intent": "port the libcob runtime semantics first (a RUNTIME gap, not a front-end gap); once the cob_intr_* is real the front-end wires for free",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "INTEGER-OF-BOOLEAN",
+   "category": "runtime_unimplemented",
+   "why_boundary_in_gnucobol_rs": "libcob itself does not implement it in GnuCOBOL 3.2 -- the ported cob_intr_* is an error_not_implemented stub mirroring the oracle, so there is no runtime behaviour to reproduce",
+   "build_intent": "port the libcob runtime semantics first (a RUNTIME gap, not a front-end gap); once the cob_intr_* is real the front-end wires for free",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "STANDARD-COMPARE",
+   "category": "runtime_unimplemented",
+   "why_boundary_in_gnucobol_rs": "libcob itself does not implement it in GnuCOBOL 3.2 -- the ported cob_intr_* is an error_not_implemented stub mirroring the oracle, so there is no runtime behaviour to reproduce",
+   "build_intent": "port the libcob runtime semantics first (a RUNTIME gap, not a front-end gap); once the cob_intr_* is real the front-end wires for free",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "DISPLAY-OF",
+   "category": "runtime_unimplemented",
+   "why_boundary_in_gnucobol_rs": "libcob itself does not implement it in GnuCOBOL 3.2 -- the ported cob_intr_* is an error_not_implemented stub mirroring the oracle, so there is no runtime behaviour to reproduce",
+   "build_intent": "port the libcob runtime semantics first (a RUNTIME gap, not a front-end gap); once the cob_intr_* is real the front-end wires for free",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "NATIONAL-OF",
+   "category": "runtime_unimplemented",
+   "why_boundary_in_gnucobol_rs": "libcob itself does not implement it in GnuCOBOL 3.2 -- the ported cob_intr_* is an error_not_implemented stub mirroring the oracle, so there is no runtime behaviour to reproduce",
+   "build_intent": "port the libcob runtime semantics first (a RUNTIME gap, not a front-end gap); once the cob_intr_* is real the front-end wires for free",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "CHAR-NATIONAL",
+   "category": "runtime_unimplemented",
+   "why_boundary_in_gnucobol_rs": "libcob itself does not implement it in GnuCOBOL 3.2 -- the ported cob_intr_* is an error_not_implemented stub mirroring the oracle, so there is no runtime behaviour to reproduce",
+   "build_intent": "port the libcob runtime semantics first (a RUNTIME gap, not a front-end gap); once the cob_intr_* is real the front-end wires for free",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "MODULE-ID",
+   "category": "program_state",
+   "why_boundary_in_gnucobol_rs": "returns live program / exception / pointer state (the calling module, the last exception, a pointer's target) with no fixed oracle output to be byte-identical to",
+   "build_intent": "needs a front-end program-state + exception + pointer model; a separate non-oracle effort outside the byte-identity subset",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "MODULE-SOURCE",
+   "category": "program_state",
+   "why_boundary_in_gnucobol_rs": "returns live program / exception / pointer state (the calling module, the last exception, a pointer's target) with no fixed oracle output to be byte-identical to",
+   "build_intent": "needs a front-end program-state + exception + pointer model; a separate non-oracle effort outside the byte-identity subset",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "MODULE-CALLER-ID",
+   "category": "program_state",
+   "why_boundary_in_gnucobol_rs": "returns live program / exception / pointer state (the calling module, the last exception, a pointer's target) with no fixed oracle output to be byte-identical to",
+   "build_intent": "needs a front-end program-state + exception + pointer model; a separate non-oracle effort outside the byte-identity subset",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "MODULE-PATH",
+   "category": "program_state",
+   "why_boundary_in_gnucobol_rs": "returns live program / exception / pointer state (the calling module, the last exception, a pointer's target) with no fixed oracle output to be byte-identical to",
+   "build_intent": "needs a front-end program-state + exception + pointer model; a separate non-oracle effort outside the byte-identity subset",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "MODULE-DATE",
+   "category": "program_state",
+   "why_boundary_in_gnucobol_rs": "returns live program / exception / pointer state (the calling module, the last exception, a pointer's target) with no fixed oracle output to be byte-identical to",
+   "build_intent": "needs a front-end program-state + exception + pointer model; a separate non-oracle effort outside the byte-identity subset",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "MODULE-FORMATTED-DATE",
+   "category": "program_state",
+   "why_boundary_in_gnucobol_rs": "returns live program / exception / pointer state (the calling module, the last exception, a pointer's target) with no fixed oracle output to be byte-identical to",
+   "build_intent": "needs a front-end program-state + exception + pointer model; a separate non-oracle effort outside the byte-identity subset",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "MODULE-TIME",
+   "category": "program_state",
+   "why_boundary_in_gnucobol_rs": "returns live program / exception / pointer state (the calling module, the last exception, a pointer's target) with no fixed oracle output to be byte-identical to",
+   "build_intent": "needs a front-end program-state + exception + pointer model; a separate non-oracle effort outside the byte-identity subset",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "EXCEPTION-FILE",
+   "category": "program_state",
+   "why_boundary_in_gnucobol_rs": "returns live program / exception / pointer state (the calling module, the last exception, a pointer's target) with no fixed oracle output to be byte-identical to",
+   "build_intent": "needs a front-end program-state + exception + pointer model; a separate non-oracle effort outside the byte-identity subset",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "EXCEPTION-FILE-N",
+   "category": "program_state",
+   "why_boundary_in_gnucobol_rs": "returns live program / exception / pointer state (the calling module, the last exception, a pointer's target) with no fixed oracle output to be byte-identical to",
+   "build_intent": "needs a front-end program-state + exception + pointer model; a separate non-oracle effort outside the byte-identity subset",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "EXCEPTION-LOCATION",
+   "category": "program_state",
+   "why_boundary_in_gnucobol_rs": "returns live program / exception / pointer state (the calling module, the last exception, a pointer's target) with no fixed oracle output to be byte-identical to",
+   "build_intent": "needs a front-end program-state + exception + pointer model; a separate non-oracle effort outside the byte-identity subset",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "EXCEPTION-LOCATION-N",
+   "category": "program_state",
+   "why_boundary_in_gnucobol_rs": "returns live program / exception / pointer state (the calling module, the last exception, a pointer's target) with no fixed oracle output to be byte-identical to",
+   "build_intent": "needs a front-end program-state + exception + pointer model; a separate non-oracle effort outside the byte-identity subset",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "EXCEPTION-STATEMENT",
+   "category": "program_state",
+   "why_boundary_in_gnucobol_rs": "returns live program / exception / pointer state (the calling module, the last exception, a pointer's target) with no fixed oracle output to be byte-identical to",
+   "build_intent": "needs a front-end program-state + exception + pointer model; a separate non-oracle effort outside the byte-identity subset",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "EXCEPTION-STATUS",
+   "category": "program_state",
+   "why_boundary_in_gnucobol_rs": "returns live program / exception / pointer state (the calling module, the last exception, a pointer's target) with no fixed oracle output to be byte-identical to",
+   "build_intent": "needs a front-end program-state + exception + pointer model; a separate non-oracle effort outside the byte-identity subset",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "CONTENT-OF",
+   "category": "program_state",
+   "why_boundary_in_gnucobol_rs": "returns live program / exception / pointer state (the calling module, the last exception, a pointer's target) with no fixed oracle output to be byte-identical to",
+   "build_intent": "needs a front-end program-state + exception + pointer model; a separate non-oracle effort outside the byte-identity subset",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "CONTENT-LENGTH",
+   "category": "program_state",
+   "why_boundary_in_gnucobol_rs": "returns live program / exception / pointer state (the calling module, the last exception, a pointer's target) with no fixed oracle output to be byte-identical to",
+   "build_intent": "needs a front-end program-state + exception + pointer model; a separate non-oracle effort outside the byte-identity subset",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "RANDOM",
+   "category": "nondeterministic",
+   "why_boundary_in_gnucobol_rs": "no fixed oracle output: RANDOM is a seeded PRNG; SECONDS-PAST-MIDNIGHT reads the LIVE wall clock (it does NOT honour COB_CURRENT_DATE, unlike CURRENT-DATE which is wired); WHEN-COMPILED embeds the actual compile timestamp, which differs every build",
+   "build_intent": "out of the byte-identity subset; admissible only under an explicit pinned-seed / pinned-clock / pinned-compile-stamp profile",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "SECONDS-PAST-MIDNIGHT",
+   "category": "nondeterministic",
+   "why_boundary_in_gnucobol_rs": "no fixed oracle output: RANDOM is a seeded PRNG; SECONDS-PAST-MIDNIGHT reads the LIVE wall clock (it does NOT honour COB_CURRENT_DATE, unlike CURRENT-DATE which is wired); WHEN-COMPILED embeds the actual compile timestamp, which differs every build",
+   "build_intent": "out of the byte-identity subset; admissible only under an explicit pinned-seed / pinned-clock / pinned-compile-stamp profile",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "WHEN-COMPILED",
+   "category": "nondeterministic",
+   "why_boundary_in_gnucobol_rs": "no fixed oracle output: RANDOM is a seeded PRNG; SECONDS-PAST-MIDNIGHT reads the LIVE wall clock (it does NOT honour COB_CURRENT_DATE, unlike CURRENT-DATE which is wired); WHEN-COMPILED embeds the actual compile timestamp, which differs every build",
+   "build_intent": "out of the byte-identity subset; admissible only under an explicit pinned-seed / pinned-clock / pinned-compile-stamp profile",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "LOCALE-DATE",
+   "category": "locale_dependent",
+   "why_boundary_in_gnucobol_rs": "output depends on the active host locale; deterministic only under a fixed, declared locale profile",
+   "build_intent": "a separate locale-pinned effort (declare a locale profile, then wire against it)",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "LOCALE-TIME",
+   "category": "locale_dependent",
+   "why_boundary_in_gnucobol_rs": "output depends on the active host locale; deterministic only under a fixed, declared locale profile",
+   "build_intent": "a separate locale-pinned effort (declare a locale profile, then wire against it)",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "LOCALE-COMPARE",
+   "category": "locale_dependent",
+   "why_boundary_in_gnucobol_rs": "output depends on the active host locale; deterministic only under a fixed, declared locale profile",
+   "build_intent": "a separate locale-pinned effort (declare a locale profile, then wire against it)",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "LCL-TIME-FROM-SECS",
+   "category": "locale_dependent",
+   "why_boundary_in_gnucobol_rs": "output depends on the active host locale; deterministic only under a fixed, declared locale profile",
+   "build_intent": "a separate locale-pinned effort (declare a locale profile, then wire against it)",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "BINOP",
+   "category": "not_a_user_function",
+   "why_boundary_in_gnucobol_rs": "cobc REJECTS it as an unknown FUNCTION (probed against the admitted GnuCOBOL 3.2 oracle) -- it is a libcob-internal helper, not a user-facing intrinsic; a program using it does not compile, so there is no oracle output to match",
+   "build_intent": "NOT a build target as a FUNCTION; exists only as an internal libcob helper (BINOP backs arithmetic intrinsics; the NUM-/MON- separators back NUMVAL formatting)",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "NUM-DECIMAL-POINT",
+   "category": "not_a_user_function",
+   "why_boundary_in_gnucobol_rs": "cobc REJECTS it as an unknown FUNCTION (probed against the admitted GnuCOBOL 3.2 oracle) -- it is a libcob-internal helper, not a user-facing intrinsic; a program using it does not compile, so there is no oracle output to match",
+   "build_intent": "NOT a build target as a FUNCTION; exists only as an internal libcob helper (BINOP backs arithmetic intrinsics; the NUM-/MON- separators back NUMVAL formatting)",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "NUM-THOUSANDS-SEP",
+   "category": "not_a_user_function",
+   "why_boundary_in_gnucobol_rs": "cobc REJECTS it as an unknown FUNCTION (probed against the admitted GnuCOBOL 3.2 oracle) -- it is a libcob-internal helper, not a user-facing intrinsic; a program using it does not compile, so there is no oracle output to match",
+   "build_intent": "NOT a build target as a FUNCTION; exists only as an internal libcob helper (BINOP backs arithmetic intrinsics; the NUM-/MON- separators back NUMVAL formatting)",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "MON-DECIMAL-POINT",
+   "category": "not_a_user_function",
+   "why_boundary_in_gnucobol_rs": "cobc REJECTS it as an unknown FUNCTION (probed against the admitted GnuCOBOL 3.2 oracle) -- it is a libcob-internal helper, not a user-facing intrinsic; a program using it does not compile, so there is no oracle output to match",
+   "build_intent": "NOT a build target as a FUNCTION; exists only as an internal libcob helper (BINOP backs arithmetic intrinsics; the NUM-/MON- separators back NUMVAL formatting)",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "function": "MON-THOUSANDS-SEP",
+   "category": "not_a_user_function",
+   "why_boundary_in_gnucobol_rs": "cobc REJECTS it as an unknown FUNCTION (probed against the admitted GnuCOBOL 3.2 oracle) -- it is a libcob-internal helper, not a user-facing intrinsic; a program using it does not compile, so there is no oracle output to match",
+   "build_intent": "NOT a build target as a FUNCTION; exists only as an internal libcob helper (BINOP backs arithmetic intrinsics; the NUM-/MON- separators back NUMVAL formatting)",
+   "status": "planned_outside_gnucobol_rs"
+  }
+ ]
+}
