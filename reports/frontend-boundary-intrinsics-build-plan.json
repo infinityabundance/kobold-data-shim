@@ -137,9 +137,7 @@
   }
  ],
  "not_boundaries_gnucobol_rs_build_targets": {
-  "note": "These FUNCTION in GnuCOBOL 3.2 and ARE gnucobol-rs targets to build natively for 1:1 parity (NOT kobold boundaries) -- listed so they are not mistaken for boundaries.",
-  "RANDOM": "deterministic with a seed; the ported cob_intr_random uses reference MT19937 seeding but libcob uses GMP gmp_randseed_ui (a different MT seeding) -- a runtime port blocked on GMP's exact algorithm (GMP source not in the admitted tree)",
-  "CONTENT-OF": "needs the USAGE POINTER content model (dereference a pointer's target)",
-  "CONTENT-LENGTH": "needs the USAGE POINTER content model"
+  "note": "FUNCTIONs that work in GnuCOBOL 3.2 and ARE gnucobol-rs build targets (NOT kobold boundaries). CONTENT-OF/CONTENT-LENGTH have since been built natively (a SET ptr TO ADDRESS OF pointer-content model); only RANDOM remains, blocked on GMP's algorithm.",
+  "RANDOM": "deterministic with a seed, but the ported cob_intr_random uses reference MT19937 seeding while libcob uses GMP gmp_randseed_ui (a different MT seeding) -- a runtime port blocked on GMP's exact algorithm (GMP source is not in the admitted tree)."
  }
 }
