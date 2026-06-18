@@ -1,0 +1,65 @@
+{
+ "schema": "kobold-frontend-verb-build-plan-v1",
+ "note": "COBOL Procedure-Division verbs that the ADMITTED GnuCOBOL 3.2 oracle itself cannot compile/run. gnucobol-rs is oracle-first (correctness = byte-identical to the built cobc 3.2), so it marks these BOUNDARY and does NOT implement them -- there is no cobc output to be byte-identical to. They are recorded here as a build plan for a SEPARATE kobold-side layer that may implement their semantics independently of the GnuCOBOL 3.2 oracle. DATA ONLY: no gnucobol/libcob GPL source is included.",
+ "source": "gnucobol-rs COBOL-PARITY.md front-end statement census -- 58/66 verbs wired + proven byte-identical, 8 BOUNDARY (these).",
+ "boundary": "gnucobol-rs's bar is byte-identity with GnuCOBOL 3.2 cobc. These 8 have no cobc 3.2 behavior to match, so implementing them is a non-oracle effort that belongs OUTSIDE the faithful port -- built in a separate kobold-* crate/layer that may depend on gnucobol-rs (LGPL) but never includes it.",
+ "count": 8,
+ "verbs": [
+  {
+   "verb": "SEND",
+   "category": "communication",
+   "why_boundary_in_gnucobol_rs": "GnuCOBOL 3.2 does not implement the COMMUNICATION SECTION (compiles -Wpending \"not implemented\" + errors \"CD record missing\")",
+   "build_intent": "implement independently in a kobold-side layer with its own conformance oracle (not the GnuCOBOL 3.2 oracle); communication = a message-control runtime, screen = an ACUCOBOL-style GUI surface, ENTRY = separate-compilation-unit entry points",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "verb": "RECEIVE",
+   "category": "communication",
+   "why_boundary_in_gnucobol_rs": "GnuCOBOL 3.2 does not implement the COMMUNICATION SECTION",
+   "build_intent": "implement independently in a kobold-side layer with its own conformance oracle (not the GnuCOBOL 3.2 oracle); communication = a message-control runtime, screen = an ACUCOBOL-style GUI surface, ENTRY = separate-compilation-unit entry points",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "verb": "PURGE",
+   "category": "communication",
+   "why_boundary_in_gnucobol_rs": "GnuCOBOL 3.2 does not implement the COMMUNICATION SECTION",
+   "build_intent": "implement independently in a kobold-side layer with its own conformance oracle (not the GnuCOBOL 3.2 oracle); communication = a message-control runtime, screen = an ACUCOBOL-style GUI surface, ENTRY = separate-compilation-unit entry points",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "verb": "ENABLE",
+   "category": "communication",
+   "why_boundary_in_gnucobol_rs": "GnuCOBOL 3.2 does not implement the COMMUNICATION SECTION",
+   "build_intent": "implement independently in a kobold-side layer with its own conformance oracle (not the GnuCOBOL 3.2 oracle); communication = a message-control runtime, screen = an ACUCOBOL-style GUI surface, ENTRY = separate-compilation-unit entry points",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "verb": "DISABLE",
+   "category": "communication",
+   "why_boundary_in_gnucobol_rs": "GnuCOBOL 3.2 does not implement the COMMUNICATION SECTION",
+   "build_intent": "implement independently in a kobold-side layer with its own conformance oracle (not the GnuCOBOL 3.2 oracle); communication = a message-control runtime, screen = an ACUCOBOL-style GUI surface, ENTRY = separate-compilation-unit entry points",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "verb": "MODIFY",
+   "category": "screen",
+   "why_boundary_in_gnucobol_rs": "an ACUCOBOL screen/GUI verb absent from the GnuCOBOL 3.2 grammar (syntax error in cobc)",
+   "build_intent": "implement independently in a kobold-side layer with its own conformance oracle (not the GnuCOBOL 3.2 oracle); communication = a message-control runtime, screen = an ACUCOBOL-style GUI surface, ENTRY = separate-compilation-unit entry points",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "verb": "INQUIRE",
+   "category": "screen",
+   "why_boundary_in_gnucobol_rs": "an ACUCOBOL screen/GUI verb absent from the GnuCOBOL 3.2 grammar (syntax error in cobc)",
+   "build_intent": "implement independently in a kobold-side layer with its own conformance oracle (not the GnuCOBOL 3.2 oracle); communication = a message-control runtime, screen = an ACUCOBOL-style GUI surface, ENTRY = separate-compilation-unit entry points",
+   "status": "planned_outside_gnucobol_rs"
+  },
+  {
+   "verb": "ENTRY",
+   "category": "inter-program",
+   "why_boundary_in_gnucobol_rs": "invalid in a nested program; requires separately-compiled units, which the single-source front-end model does not provide",
+   "build_intent": "implement independently in a kobold-side layer with its own conformance oracle (not the GnuCOBOL 3.2 oracle); communication = a message-control runtime, screen = an ACUCOBOL-style GUI surface, ENTRY = separate-compilation-unit entry points",
+   "status": "planned_outside_gnucobol_rs"
+  }
+ ]
+}
