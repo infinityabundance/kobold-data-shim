@@ -2,7 +2,7 @@
  "schema": "kobold-frontend-boundary-build-plan-v2",
  "note": "TRUE boundaries of the gnucobol-rs front-end: COBOL surfaces that GnuCOBOL 3.2 itself cannot run, does not implement, or only produces non-deterministic/host-specific output for -- so there is NO fixed oracle for gnucobol-rs to be byte-identical to. These are recorded for a SEPARATE kobold-side layer that may implement them with its own conformance model (NOT the GnuCOBOL 3.2 byte oracle). DATA ONLY: no gnucobol/libcob GPL source. Supersedes frontend-boundary-intrinsics-build-plan.json (most of those have since been built natively in gnucobol-rs; front-end intrinsics are now 91/110).",
  "source": "gnucobol-rs COBOL-PARITY.md -- front-end intrinsics 91/110 wired byte-identical; these are the genuine boundaries.",
- "count": 17,
+ "count": 18,
  "categories": {
   "libcob_unimplemented": [
    "BOOLEAN-OF-INTEGER",
@@ -30,6 +30,9 @@
   ],
   "usage_form_unfinished": [
    "NATIONAL"
+  ],
+  "gmp_substrate": [
+   "RANDOM"
   ]
  },
  "boundaries": [
@@ -134,10 +137,12 @@
    "category": "usage_form_unfinished",
    "why_true_boundary": "USAGE NATIONAL (UTF-16) is declared UNFINISHED in GnuCOBOL 3.2 (cobc emits -Wunfinished 'handling of USAGE NATIONAL is unfinished; implementation is likely to be changed', and the explicit USAGE NATIONAL form does not compile) -- pinning to an admittedly-unstable implementation is not a 1:1 target. This is a USAGE form, not an intrinsic FUNCTION",
    "surface": "USAGE form"
+  },
+  {
+   "name": "RANDOM",
+   "category": "gmp_substrate",
+   "why_true_boundary": "RANDOM's value is GMP's INTERNAL Mersenne-Twister stream (libcob delegates to gmp_randinit_mt + gmp_randseed_ui; the GMP-specific seeding is verified NOT to be the textbook MT init_by_array). gnucobol-rs ports libcob's ALGORITHMS, not GMP's internals, and does not link libgmp -- so the exact bit-stream is a declared substrate boundary (like the host x87 80-bit long double).",
+   "surface": "intrinsic FUNCTION"
   }
- ],
- "not_boundaries_gnucobol_rs_build_targets": {
-  "note": "FUNCTIONs that work in GnuCOBOL 3.2 and ARE gnucobol-rs build targets (NOT kobold boundaries). CONTENT-OF/CONTENT-LENGTH have since been built natively (a SET ptr TO ADDRESS OF pointer-content model); only RANDOM remains, blocked on GMP's algorithm.",
-  "RANDOM": "deterministic with a seed, but the ported cob_intr_random uses reference MT19937 seeding while libcob uses GMP gmp_randseed_ui (a different MT seeding) -- a runtime port blocked on GMP's exact algorithm (GMP source is not in the admitted tree)."
- }
+ ]
 }
