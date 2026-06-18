@@ -2,7 +2,7 @@
  "schema": "kobold-frontend-boundary-build-plan-v2",
  "note": "TRUE boundaries of the gnucobol-rs front-end: COBOL surfaces that GnuCOBOL 3.2 itself cannot run, does not implement, or only produces non-deterministic/host-specific output for -- so there is NO fixed oracle for gnucobol-rs to be byte-identical to. These are recorded for a SEPARATE kobold-side layer that may implement them with its own conformance model (NOT the GnuCOBOL 3.2 byte oracle). DATA ONLY: no gnucobol/libcob GPL source. Supersedes frontend-boundary-intrinsics-build-plan.json (most of those have since been built natively in gnucobol-rs; front-end intrinsics are now 91/110).",
  "source": "gnucobol-rs COBOL-PARITY.md -- front-end intrinsics 91/110 wired byte-identical; these are the genuine boundaries.",
- "count": 18,
+ "count": 17,
  "categories": {
   "libcob_unimplemented": [
    "BOOLEAN-OF-INTEGER",
@@ -24,9 +24,6 @@
   ],
   "compiler_artifact": [
    "MODULE-PATH"
-  ],
-  "nondeterministic": [
-   "SECONDS-PAST-MIDNIGHT"
   ],
   "usage_form_unfinished": [
    "NATIONAL"
@@ -124,12 +121,6 @@
    "name": "MODULE-PATH",
    "category": "compiler_artifact",
    "why_true_boundary": "cobc returns the COMPILED BINARY path (the -o output); an interpreter produces no binary, so there is no analog to reproduce",
-   "surface": "intrinsic FUNCTION"
-  },
-  {
-   "name": "SECONDS-PAST-MIDNIGHT",
-   "category": "nondeterministic",
-   "why_true_boundary": "reads the LIVE wall clock and ignores COB_CURRENT_DATE -- there is no fixed oracle value, so it cannot be byte-matched even under a pinned clock",
    "surface": "intrinsic FUNCTION"
   },
   {
