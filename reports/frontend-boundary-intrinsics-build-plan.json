@@ -1,9 +1,19 @@
 {
- "schema": "kobold-frontend-intrinsic-build-plan-v1",
- "note": "COBOL intrinsic FUNCTIONs that gnucobol-rs's front-end does NOT yet wire. gnucobol-rs wires 82/110 intrinsics, each proven byte-identical to the admitted GnuCOBOL 3.2 cobc; these 28 are the boundary. Each was probed against the oracle to classify it honestly (not a blanket 'no oracle'): some are absent/inactive in 3.2 (no oracle behaviour), others are concrete future targets needing a sealed runtime helper or more front-end modelling. Recorded as a build plan for a SEPARATE kobold-side layer. DATA ONLY: no gnucobol/libcob GPL source. Companion to frontend-boundary-verbs-build-plan.json.",
- "source": "gnucobol-rs COBOL-PARITY.md intrinsic census -- 82/110 wired + proven byte-identical, 28 boundary (these).",
- "count": 28,
+ "schema": "kobold-frontend-boundary-build-plan-v2",
+ "note": "TRUE boundaries of the gnucobol-rs front-end: COBOL surfaces that GnuCOBOL 3.2 itself cannot run, does not implement, or only produces non-deterministic/host-specific output for -- so there is NO fixed oracle for gnucobol-rs to be byte-identical to. These are recorded for a SEPARATE kobold-side layer that may implement them with its own conformance model (NOT the GnuCOBOL 3.2 byte oracle). DATA ONLY: no gnucobol/libcob GPL source. Supersedes frontend-boundary-intrinsics-build-plan.json (most of those have since been built natively in gnucobol-rs; front-end intrinsics are now 91/110).",
+ "source": "gnucobol-rs COBOL-PARITY.md -- front-end intrinsics 91/110 wired byte-identical; these are the genuine boundaries.",
+ "count": 17,
  "categories": {
+  "libcob_unimplemented": [
+   "BOOLEAN-OF-INTEGER",
+   "CHAR-NATIONAL",
+   "DISPLAY-OF",
+   "EXCEPTION-FILE-N",
+   "EXCEPTION-LOCATION-N",
+   "INTEGER-OF-BOOLEAN",
+   "NATIONAL-OF",
+   "STANDARD-COMPARE"
+  ],
   "not_a_user_function": [
    "BINOP",
    "LCL-TIME-FROM-SECS",
@@ -12,239 +22,124 @@
    "NUM-DECIMAL-POINT",
    "NUM-THOUSANDS-SEP"
   ],
-  "libcob_unimplemented": [
-   "BOOLEAN-OF-INTEGER",
-   "CHAR-NATIONAL",
-   "DISPLAY-OF",
-   "INTEGER-OF-BOOLEAN",
-   "NATIONAL-OF",
-   "STANDARD-COMPARE"
+  "compiler_artifact": [
+   "MODULE-PATH"
   ],
-  "needs_pointer_model": [
-   "CONTENT-LENGTH",
-   "CONTENT-OF"
-  ],
-  "needs_exception_model": [
-   "EXCEPTION-FILE",
-   "EXCEPTION-FILE-N",
-   "EXCEPTION-LOCATION",
-   "EXCEPTION-LOCATION-N",
-   "EXCEPTION-STATEMENT",
-   "EXCEPTION-STATUS"
-  ],
-  "compile_stamp": [
-   "MODULE-DATE",
-   "MODULE-FORMATTED-DATE",
-   "MODULE-TIME",
-   "WHEN-COMPILED"
-  ],
-  "host_path": [
-   "MODULE-PATH",
-   "MODULE-SOURCE"
-  ],
-  "runtime_gap": [
-   "RANDOM"
-  ],
-  "live_clock": [
+  "nondeterministic": [
    "SECONDS-PAST-MIDNIGHT"
+  ],
+  "usage_form_unfinished": [
+   "NATIONAL"
   ]
  },
- "functions": [
+ "boundaries": [
   {
-   "function": "BINOP",
-   "category": "not_a_user_function",
-   "why_boundary_in_gnucobol_rs": "not a user FUNCTION: cobc rejects it as unknown (a libcob-internal helper, probed against the oracle)",
-   "build_intent": "NOT a build target as a FUNCTION; exists only as an internal libcob helper",
-   "status": "planned_outside_gnucobol_rs"
-  },
-  {
-   "function": "BOOLEAN-OF-INTEGER",
+   "name": "BOOLEAN-OF-INTEGER",
    "category": "libcob_unimplemented",
-   "why_boundary_in_gnucobol_rs": "absent in GnuCOBOL 3.2: libcob leaves it unimplemented (the ported cob_intr_* is a faithful not-implemented stub)",
-   "build_intent": "port the libcob runtime semantics first (a RUNTIME gap); the front-end then wires for free",
-   "status": "planned_outside_gnucobol_rs"
+   "why_true_boundary": "cobc rejects it at compile in GnuCOBOL 3.2 (\"FUNCTION 'X' is not implemented\") -- libcob never implements it, so a program using it does not compile and there is no oracle output to match",
+   "surface": "intrinsic FUNCTION"
   },
   {
-   "function": "CHAR-NATIONAL",
+   "name": "INTEGER-OF-BOOLEAN",
    "category": "libcob_unimplemented",
-   "why_boundary_in_gnucobol_rs": "absent in GnuCOBOL 3.2: libcob leaves it unimplemented (the ported cob_intr_* is a faithful not-implemented stub)",
-   "build_intent": "port the libcob runtime semantics first (a RUNTIME gap); the front-end then wires for free",
-   "status": "planned_outside_gnucobol_rs"
+   "why_true_boundary": "cobc rejects it at compile in GnuCOBOL 3.2 (\"FUNCTION 'X' is not implemented\") -- libcob never implements it, so a program using it does not compile and there is no oracle output to match",
+   "surface": "intrinsic FUNCTION"
   },
   {
-   "function": "CONTENT-LENGTH",
-   "category": "needs_pointer_model",
-   "why_boundary_in_gnucobol_rs": "dereferences a USAGE POINTER target; needs the pointer-content model",
-   "build_intent": "build the USAGE POINTER content model, then wire",
-   "status": "planned_outside_gnucobol_rs"
-  },
-  {
-   "function": "CONTENT-OF",
-   "category": "needs_pointer_model",
-   "why_boundary_in_gnucobol_rs": "dereferences a USAGE POINTER target; needs the pointer-content model",
-   "build_intent": "build the USAGE POINTER content model, then wire",
-   "status": "planned_outside_gnucobol_rs"
-  },
-  {
-   "function": "DISPLAY-OF",
+   "name": "STANDARD-COMPARE",
    "category": "libcob_unimplemented",
-   "why_boundary_in_gnucobol_rs": "absent in GnuCOBOL 3.2: libcob leaves it unimplemented (the ported cob_intr_* is a faithful not-implemented stub)",
-   "build_intent": "port the libcob runtime semantics first (a RUNTIME gap); the front-end then wires for free",
-   "status": "planned_outside_gnucobol_rs"
+   "why_true_boundary": "cobc rejects it at compile in GnuCOBOL 3.2 (\"FUNCTION 'X' is not implemented\") -- libcob never implements it, so a program using it does not compile and there is no oracle output to match",
+   "surface": "intrinsic FUNCTION"
   },
   {
-   "function": "EXCEPTION-FILE",
-   "category": "needs_exception_model",
-   "why_boundary_in_gnucobol_rs": "deterministic given a known fault, but the front-end does not yet track the COBOL exception registers (it fails closed on faults)",
-   "build_intent": "build a front-end exception-state model (track the COBOL exception registers), then wire",
-   "status": "planned_outside_gnucobol_rs"
-  },
-  {
-   "function": "EXCEPTION-FILE-N",
-   "category": "needs_exception_model",
-   "why_boundary_in_gnucobol_rs": "deterministic given a known fault, but the front-end does not yet track the COBOL exception registers (it fails closed on faults)",
-   "build_intent": "build a front-end exception-state model (track the COBOL exception registers), then wire",
-   "status": "planned_outside_gnucobol_rs"
-  },
-  {
-   "function": "EXCEPTION-LOCATION",
-   "category": "needs_exception_model",
-   "why_boundary_in_gnucobol_rs": "deterministic given a known fault, but the front-end does not yet track the COBOL exception registers (it fails closed on faults)",
-   "build_intent": "build a front-end exception-state model (track the COBOL exception registers), then wire",
-   "status": "planned_outside_gnucobol_rs"
-  },
-  {
-   "function": "EXCEPTION-LOCATION-N",
-   "category": "needs_exception_model",
-   "why_boundary_in_gnucobol_rs": "deterministic given a known fault, but the front-end does not yet track the COBOL exception registers (it fails closed on faults)",
-   "build_intent": "build a front-end exception-state model (track the COBOL exception registers), then wire",
-   "status": "planned_outside_gnucobol_rs"
-  },
-  {
-   "function": "EXCEPTION-STATEMENT",
-   "category": "needs_exception_model",
-   "why_boundary_in_gnucobol_rs": "deterministic given a known fault, but the front-end does not yet track the COBOL exception registers (it fails closed on faults)",
-   "build_intent": "build a front-end exception-state model (track the COBOL exception registers), then wire",
-   "status": "planned_outside_gnucobol_rs"
-  },
-  {
-   "function": "EXCEPTION-STATUS",
-   "category": "needs_exception_model",
-   "why_boundary_in_gnucobol_rs": "deterministic given a known fault, but the front-end does not yet track the COBOL exception registers (it fails closed on faults)",
-   "build_intent": "build a front-end exception-state model (track the COBOL exception registers), then wire",
-   "status": "planned_outside_gnucobol_rs"
-  },
-  {
-   "function": "INTEGER-OF-BOOLEAN",
+   "name": "DISPLAY-OF",
    "category": "libcob_unimplemented",
-   "why_boundary_in_gnucobol_rs": "absent in GnuCOBOL 3.2: libcob leaves it unimplemented (the ported cob_intr_* is a faithful not-implemented stub)",
-   "build_intent": "port the libcob runtime semantics first (a RUNTIME gap); the front-end then wires for free",
-   "status": "planned_outside_gnucobol_rs"
+   "why_true_boundary": "cobc rejects it at compile in GnuCOBOL 3.2 (\"FUNCTION 'X' is not implemented\") -- libcob never implements it, so a program using it does not compile and there is no oracle output to match",
+   "surface": "intrinsic FUNCTION"
   },
   {
-   "function": "LCL-TIME-FROM-SECS",
-   "category": "not_a_user_function",
-   "why_boundary_in_gnucobol_rs": "not a user FUNCTION: cobc rejects it as unknown (a libcob-internal helper, probed against the oracle)",
-   "build_intent": "NOT a build target as a FUNCTION; exists only as an internal libcob helper",
-   "status": "planned_outside_gnucobol_rs"
-  },
-  {
-   "function": "MODULE-DATE",
-   "category": "compile_stamp",
-   "why_boundary_in_gnucobol_rs": "a compile-time stamp (cobc embeds the build moment); the interpreter has no compile step, so nothing fixed to match",
-   "build_intent": "admissible only under an explicit pinned compile-stamp profile",
-   "status": "planned_outside_gnucobol_rs"
-  },
-  {
-   "function": "MODULE-FORMATTED-DATE",
-   "category": "compile_stamp",
-   "why_boundary_in_gnucobol_rs": "a compile-time stamp (cobc embeds the build moment); the interpreter has no compile step, so nothing fixed to match",
-   "build_intent": "admissible only under an explicit pinned compile-stamp profile",
-   "status": "planned_outside_gnucobol_rs"
-  },
-  {
-   "function": "MODULE-PATH",
-   "category": "host_path",
-   "why_boundary_in_gnucobol_rs": "the compile-time source name / runtime load path (host-specific, not portable)",
-   "build_intent": "admissible only under a fixed source-name / load-path profile",
-   "status": "planned_outside_gnucobol_rs"
-  },
-  {
-   "function": "MODULE-SOURCE",
-   "category": "host_path",
-   "why_boundary_in_gnucobol_rs": "the compile-time source name / runtime load path (host-specific, not portable)",
-   "build_intent": "admissible only under a fixed source-name / load-path profile",
-   "status": "planned_outside_gnucobol_rs"
-  },
-  {
-   "function": "MODULE-TIME",
-   "category": "compile_stamp",
-   "why_boundary_in_gnucobol_rs": "a compile-time stamp (cobc embeds the build moment); the interpreter has no compile step, so nothing fixed to match",
-   "build_intent": "admissible only under an explicit pinned compile-stamp profile",
-   "status": "planned_outside_gnucobol_rs"
-  },
-  {
-   "function": "MON-DECIMAL-POINT",
-   "category": "not_a_user_function",
-   "why_boundary_in_gnucobol_rs": "not a user FUNCTION: cobc rejects it as unknown (a libcob-internal helper, probed against the oracle)",
-   "build_intent": "NOT a build target as a FUNCTION; exists only as an internal libcob helper",
-   "status": "planned_outside_gnucobol_rs"
-  },
-  {
-   "function": "MON-THOUSANDS-SEP",
-   "category": "not_a_user_function",
-   "why_boundary_in_gnucobol_rs": "not a user FUNCTION: cobc rejects it as unknown (a libcob-internal helper, probed against the oracle)",
-   "build_intent": "NOT a build target as a FUNCTION; exists only as an internal libcob helper",
-   "status": "planned_outside_gnucobol_rs"
-  },
-  {
-   "function": "NATIONAL-OF",
+   "name": "NATIONAL-OF",
    "category": "libcob_unimplemented",
-   "why_boundary_in_gnucobol_rs": "absent in GnuCOBOL 3.2: libcob leaves it unimplemented (the ported cob_intr_* is a faithful not-implemented stub)",
-   "build_intent": "port the libcob runtime semantics first (a RUNTIME gap); the front-end then wires for free",
-   "status": "planned_outside_gnucobol_rs"
+   "why_true_boundary": "cobc rejects it at compile in GnuCOBOL 3.2 (\"FUNCTION 'X' is not implemented\") -- libcob never implements it, so a program using it does not compile and there is no oracle output to match",
+   "surface": "intrinsic FUNCTION"
   },
   {
-   "function": "NUM-DECIMAL-POINT",
-   "category": "not_a_user_function",
-   "why_boundary_in_gnucobol_rs": "not a user FUNCTION: cobc rejects it as unknown (a libcob-internal helper, probed against the oracle)",
-   "build_intent": "NOT a build target as a FUNCTION; exists only as an internal libcob helper",
-   "status": "planned_outside_gnucobol_rs"
-  },
-  {
-   "function": "NUM-THOUSANDS-SEP",
-   "category": "not_a_user_function",
-   "why_boundary_in_gnucobol_rs": "not a user FUNCTION: cobc rejects it as unknown (a libcob-internal helper, probed against the oracle)",
-   "build_intent": "NOT a build target as a FUNCTION; exists only as an internal libcob helper",
-   "status": "planned_outside_gnucobol_rs"
-  },
-  {
-   "function": "RANDOM",
-   "category": "runtime_gap",
-   "why_boundary_in_gnucobol_rs": "present + deterministic with a seed, but the ported cob_intr_random PRNG does not yet match libcob's stream (cobrun 0.4170.. vs oracle 0.5541.. for RANDOM(1)); a RUNTIME sealing task",
-   "build_intent": "seal the ported cob_intr_random against libcob's PRNG stream (a RUNTIME task), then wire",
-   "status": "planned_outside_gnucobol_rs"
-  },
-  {
-   "function": "SECONDS-PAST-MIDNIGHT",
-   "category": "live_clock",
-   "why_boundary_in_gnucobol_rs": "reads the live wall clock (ignores COB_CURRENT_DATE)",
-   "build_intent": "admissible only under an explicit pinned clock profile",
-   "status": "planned_outside_gnucobol_rs"
-  },
-  {
-   "function": "STANDARD-COMPARE",
+   "name": "CHAR-NATIONAL",
    "category": "libcob_unimplemented",
-   "why_boundary_in_gnucobol_rs": "absent in GnuCOBOL 3.2: libcob leaves it unimplemented (the ported cob_intr_* is a faithful not-implemented stub)",
-   "build_intent": "port the libcob runtime semantics first (a RUNTIME gap); the front-end then wires for free",
-   "status": "planned_outside_gnucobol_rs"
+   "why_true_boundary": "cobc rejects it at compile in GnuCOBOL 3.2 (\"FUNCTION 'X' is not implemented\") -- libcob never implements it, so a program using it does not compile and there is no oracle output to match",
+   "surface": "intrinsic FUNCTION"
   },
   {
-   "function": "WHEN-COMPILED",
-   "category": "compile_stamp",
-   "why_boundary_in_gnucobol_rs": "a compile-time stamp (cobc embeds the build moment); the interpreter has no compile step, so nothing fixed to match",
-   "build_intent": "admissible only under an explicit pinned compile-stamp profile",
-   "status": "planned_outside_gnucobol_rs"
+   "name": "EXCEPTION-FILE-N",
+   "category": "libcob_unimplemented",
+   "why_true_boundary": "cobc rejects it at compile in GnuCOBOL 3.2 (\"FUNCTION 'X' is not implemented\") -- libcob never implements it, so a program using it does not compile and there is no oracle output to match",
+   "surface": "intrinsic FUNCTION"
+  },
+  {
+   "name": "EXCEPTION-LOCATION-N",
+   "category": "libcob_unimplemented",
+   "why_true_boundary": "cobc rejects it at compile in GnuCOBOL 3.2 (\"FUNCTION 'X' is not implemented\") -- libcob never implements it, so a program using it does not compile and there is no oracle output to match",
+   "surface": "intrinsic FUNCTION"
+  },
+  {
+   "name": "BINOP",
+   "category": "not_a_user_function",
+   "why_true_boundary": "cobc rejects it as an unknown FUNCTION (probed against the oracle) -- a libcob-internal helper, not a user-facing intrinsic; a program using it does not compile",
+   "surface": "intrinsic FUNCTION"
+  },
+  {
+   "name": "NUM-DECIMAL-POINT",
+   "category": "not_a_user_function",
+   "why_true_boundary": "cobc rejects it as an unknown FUNCTION (probed against the oracle) -- a libcob-internal helper, not a user-facing intrinsic; a program using it does not compile",
+   "surface": "intrinsic FUNCTION"
+  },
+  {
+   "name": "NUM-THOUSANDS-SEP",
+   "category": "not_a_user_function",
+   "why_true_boundary": "cobc rejects it as an unknown FUNCTION (probed against the oracle) -- a libcob-internal helper, not a user-facing intrinsic; a program using it does not compile",
+   "surface": "intrinsic FUNCTION"
+  },
+  {
+   "name": "MON-DECIMAL-POINT",
+   "category": "not_a_user_function",
+   "why_true_boundary": "cobc rejects it as an unknown FUNCTION (probed against the oracle) -- a libcob-internal helper, not a user-facing intrinsic; a program using it does not compile",
+   "surface": "intrinsic FUNCTION"
+  },
+  {
+   "name": "MON-THOUSANDS-SEP",
+   "category": "not_a_user_function",
+   "why_true_boundary": "cobc rejects it as an unknown FUNCTION (probed against the oracle) -- a libcob-internal helper, not a user-facing intrinsic; a program using it does not compile",
+   "surface": "intrinsic FUNCTION"
+  },
+  {
+   "name": "LCL-TIME-FROM-SECS",
+   "category": "not_a_user_function",
+   "why_true_boundary": "cobc rejects it as an unknown FUNCTION (probed against the oracle) -- a libcob-internal helper, not a user-facing intrinsic; a program using it does not compile",
+   "surface": "intrinsic FUNCTION"
+  },
+  {
+   "name": "MODULE-PATH",
+   "category": "compiler_artifact",
+   "why_true_boundary": "cobc returns the COMPILED BINARY path (the -o output); an interpreter produces no binary, so there is no analog to reproduce",
+   "surface": "intrinsic FUNCTION"
+  },
+  {
+   "name": "SECONDS-PAST-MIDNIGHT",
+   "category": "nondeterministic",
+   "why_true_boundary": "reads the LIVE wall clock and ignores COB_CURRENT_DATE -- there is no fixed oracle value, so it cannot be byte-matched even under a pinned clock",
+   "surface": "intrinsic FUNCTION"
+  },
+  {
+   "name": "NATIONAL",
+   "category": "usage_form_unfinished",
+   "why_true_boundary": "USAGE NATIONAL (UTF-16) is declared UNFINISHED in GnuCOBOL 3.2 (cobc emits -Wunfinished 'handling of USAGE NATIONAL is unfinished; implementation is likely to be changed', and the explicit USAGE NATIONAL form does not compile) -- pinning to an admittedly-unstable implementation is not a 1:1 target. This is a USAGE form, not an intrinsic FUNCTION",
+   "surface": "USAGE form"
   }
- ]
+ ],
+ "not_boundaries_gnucobol_rs_build_targets": {
+  "note": "These FUNCTION in GnuCOBOL 3.2 and ARE gnucobol-rs targets to build natively for 1:1 parity (NOT kobold boundaries) -- listed so they are not mistaken for boundaries.",
+  "RANDOM": "deterministic with a seed; the ported cob_intr_random uses reference MT19937 seeding but libcob uses GMP gmp_randseed_ui (a different MT seeding) -- a runtime port blocked on GMP's exact algorithm (GMP source not in the admitted tree)",
+  "CONTENT-OF": "needs the USAGE POINTER content model (dereference a pointer's target)",
+  "CONTENT-LENGTH": "needs the USAGE POINTER content model"
+ }
 }
